@@ -1,3 +1,4 @@
+
 function TooltipExtended() {
     /**
      * Add event-listeners
@@ -8,11 +9,13 @@ function TooltipExtended() {
     };
     this.addEvents = function () {
         TooltipExtended.addEvents.handleMouseMove = function (e) {
+            
             TooltipExtended.move(e);
         };
 
         $("[data-item]").hover(
             function (e) {
+                console.log("Hovering over item in database");
                 $(document).bind('mousemove', TooltipExtended.addEvents.handleMouseMove);
                 if (/^item=[0-9]*$/.test($(this).attr("data-item"))) {
                     TooltipExtended.Item.get(this, function (data) {
@@ -91,7 +94,7 @@ function TooltipExtended() {
         /**
          * Loading HTML
          */
-        this.loading = "Loading item...";
+        this.loading = "Searching the Pokédex...";
 
         /**
          * The currently displayed item ID
@@ -128,41 +131,55 @@ function TooltipExtended() {
 
             TooltipExtended.Item.currentId = id;
 
-            if (typeof cache != 'undefined') {
+            if (typeof cache != 'undefined') 
+			{
                 callback(cache)
-            } else {
+            } 
+			else 
+			{
                 callback(this.loading);
+                TooltipExtended.Item.currentAjax = $.getJSON(baseURL + "/api/v1/tooltip/item/" + id + "/" + realm, function (data) 
+				{
 
-                TooltipExtended.Item.currentAjax = $.getJSON(baseURL + "/api/v1/tooltip/item/" + id + "/" + patch, function (data) {
                     icon = ($(data)[0].icon);
-                    data = $(data.tooltip).prepend("<p class='t-icon' style='background-image: url(" + imgURL + icon + ".png);'><ins class='t-frame'></ins></p>");
+																									// when using baseURL here the icon wont show :o
+                    data = $(data.tooltip).prepend("<p class='t-icon' style='background-image: url(http://wowragnaros.com:8888/application/modules/database/assets/images/icons/" + icon + ".png);'><ins class='t-frame'></ins></p>");
 
                     //handle item player data
-                    if (typeof tooltipCharData != 'undefined' && (slot in tooltipCharData)) {
+                    if (typeof tooltipCharData != 'undefined' && (slot in tooltipCharData)) 
+					{
                         var ItemPlayerData = tooltipCharData[slot];
 
                         //handle enchants
-                        if (ItemPlayerData.enchant) {
+                        if (ItemPlayerData.enchant) 
+						{
                             data.find('#tooltip-item-enchantments').html(ItemPlayerData.enchant.description);
                         }
                     }
 
                     //handle active item set pieces
-                    if (typeof tooltipEqItemArr != 'undefined') {
+                    if (typeof tooltipEqItemArr != 'undefined') 
+					{
+						console.log("WE HAVE ITEM PIECES!");
                         //loop trough the itemset pieces
-                        data.find('.item-set-piece').each(function (i, e) {
+                        data.find('.item-set-piece').each(function (i, e)
+						{
                             var possibleEntriesString = $(e).attr('data-possible-entries');
                             //split into array
                             var possibleEntries = [];
                             //make sure we have more than 1 entry
-                            if (possibleEntriesString.indexOf(':') > -1) {
+                            if (possibleEntriesString.indexOf(':') > -1)
+							{
                                 possibleEntries = possibleEntriesString.split(':');
-                            } else {
+                            }
+							else
+							{
                                 possibleEntries[0] = possibleEntriesString;
                             }
                             //loop the possible entries and check if one of the is equipped
                             $.each(possibleEntries, function (i2, v2) {
-                                if ($.inArray(parseInt(v2), tooltipEqItemArr) > -1) {
+                                if ($.inArray(parseInt(v2), tooltipEqItemArr) > -1)
+								{
                                     //active the piece
                                     $(e).addClass('q8');
                                     $(e).addClass('item-set-active-piece');
@@ -172,26 +189,35 @@ function TooltipExtended() {
                         //get the active pieces count
                         var activePiecesCount = data.find('.item-set-active-piece').length;
                         //update the equipped item set pieces count
-                        if (data.find('#tooltip-item-set-count').length > 0) {
+                        if (data.find('#tooltip-item-set-count').length > 0)
+						{
                             data.find('#tooltip-item-set-count').html(activePiecesCount);
                         }
                         //update the set bonuses
-                        if (activePiecesCount > 0) {
-                            data.find('.item-set-bonus').each(function (i, e) {
+                        if (activePiecesCount > 0)	
+						{
+                            data.find('.item-set-bonus').each(function (i, e)
+							{
                                 var requiredPieces = $(e).attr('data-bonus-required-items');
                                 //activate the set bonus
-                                if (activePiecesCount >= requiredPieces) {
+                                if (activePiecesCount >= requiredPieces)
+								{
                                     $(e).addClass('q2');
                                 }
                             });
                         }
                     }
+					else
+					{
+						console.log("There's no item pieces!");
+					}
 
                     // Cache it this visit
                     $.data(element, 'tooltip-cache', data);
 
                     // Make sure it's still visible
-                    if ($("#tooltip").is(":visible") && TooltipExtended.Item.currentId == id) {
+                    if ($("#tooltip").is(":visible") && TooltipExtended.Item.currentId == id)
+					{
                         callback(data);
                     }
                 }).fail(function (jqXHR, status, error) {
@@ -201,7 +227,8 @@ function TooltipExtended() {
                         ErrorCounter++;
 
                     } else {
-                        error_text = "<p class='t-icon' style='background-image: url(" + imgURL + "INV_Misc_QuestionMark_2.png);'><ins class='t-frame'></ins></p><strong>Item not found.</strong><br/>Item does not exists in the database or not implemented in selected Patch.";
+						console.log("hello world");
+                        error_text = "<p class='t-icon' style='background-image: url(" + "http://wowragnaros.com:8888/application/modules/database/assets/images/icons/" + "INV_Misc_QuestionMark_2.png);'><ins class='t-frame'></ins></p><strong>Item not found</strong><br/>Item does not exists in this expansion (tooltip.js)";
                         $("#tooltip").html(error_text).show();
                         ErrorCounter++;
                     }
@@ -259,9 +286,9 @@ function TooltipExtended() {
             } else {
                 callback(this.loading);
 
-                TooltipExtended.Spell.currentAjax = $.getJSON(baseURL + "/api/v1/tooltip/spell/" + id + "/" + patch, function (data) {
+                TooltipExtended.Spell.currentAjax = $.getJSON(baseURL + "/api/v1/tooltip/spell/" + id + "/" + realm, function (data) {
                     icon = ($(data)[0].icon);
-                    data = $(data.tooltip).prepend("<p class='t-icon' style='background-image: url(" + imgURL + icon + ".png);'><ins class='t-frame'></ins></p>");
+                    data = $(data.tooltip).prepend("<p class='t-icon' style='background-image: url(" + "http://wowragnaros.com:8888/application/modules/database/assets/images/icons/" + icon + ".png);'><ins class='t-frame'></ins></p>");
 
                     // Cache it this visit
                     $.data(element, 'tooltip-cache', data);
@@ -278,7 +305,7 @@ function TooltipExtended() {
                         ErrorCounter++;
 
                     } else {
-                        error_text = "<p class='t-icon' style='background-image: url(" + imgURL + "INV_Misc_QuestionMark_2.png);'><ins class='t-frame'></ins></p><strong>Spell not found.</strong><br/>Spell does not exists in the database or not implemented in selected Patch.";
+                        error_text = "<p class='t-icon' style='background-image: url(" + "http://wowragnaros.com:8888/application/modules/database/assets/images/icons/" + "INV_Misc_QuestionMark_2.png);'><ins class='t-frame'></ins></p><strong>Spell not found.</strong><br/>Spell does not exists in this expansion pack (tooltip.js, Spell).";
                         $("#tooltip").html(error_text).show();
                         ErrorCounter++;
                     }
@@ -294,6 +321,7 @@ function TooltipExtended() {
 
 var ErrorCounter = 0;
 var TooltipExtended = new TooltipExtended();
+
 
 //initialize the extended tooltip
 TooltipExtended.initialize();

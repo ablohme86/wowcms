@@ -13,5 +13,6 @@ class Api_v1_model extends CI_Model
     {
         parent::__construct();
         $this->world = $this->load->database('world', true);
+		$this->world_tbc = $this->load->database('world_tbc',true);
     }
 }

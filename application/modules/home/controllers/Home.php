@@ -55,6 +55,9 @@ class Home extends MX_Controller
         }
     }
 
+
+    // A. Blohme, 23.08.24: - OBSOLETE - (Now automatically getting from 'realms' table instead!)
+    # pragma OBSOLETE
     public function downloadRealmlist()
     {
         if ($this->config->item('realmlist')) {

@@ -17,6 +17,7 @@ class Auth_model extends CI_Model
     {
         parent::__construct();
         $this->auth = $this->load->database('auth', true);
+		$this->auth_tbc = $this->load->database('auth_tbc', true);
     }
 
 
@@ -52,6 +53,12 @@ class Auth_model extends CI_Model
         return rand(0, 999999999);
     }
 
+
+    public function totalRealms()
+    {
+        $allRealmsDBs = $this->wowrealm->getRealms();
+        return $allRealmsDBs->num_rows();
+    }
 
     /**
      * @param $id
@@ -157,6 +164,7 @@ class Auth_model extends CI_Model
      */
     public function getSpecifyEmail($email)
     {
+
         return $this->auth->select('id')->where('email', $email)->get('account');
     }
 
@@ -273,9 +281,12 @@ class Auth_model extends CI_Model
     {
         $account = ($id) ?? $this->session->userdata('wow_sess_id');
 
-        $value = ($this->auth->field_exists('SecurityLevel', 'account_access'))
+        $value = 
+            // removed since not available in cmangos-classic / tbc
+        /*($this->auth->field_exists('SecurityLevel', 'account_access'))
             ? $this->auth->where('AccountID', $account)->get('account_access')->row('SecurityLevel')
-            : (($this->auth->field_exists('gmlevel', 'account'))
+            : */
+                (($this->auth->field_exists('gmlevel', 'account'))
                 ? $this->auth->where('id', $account)->get('account')->row('gmlevel')
                 :
                 $this->auth->where('id', $account)->get('account_access')->row('gmlevel'));
@@ -454,6 +465,9 @@ class Auth_model extends CI_Model
      */
     public function account_unique($data, $column = 'username'): bool
     {
+
+		// Check ALL realms
+
         $query = $this->auth->where($column, $data)->get('account')->num_rows();
 
         return ($query == 0);

@@ -9,7 +9,7 @@ defined('BASEPATH') or exit('No direct script access allowed');
  *  Write the name of your website this will appear by default.
  *
  */
-$config['website_name'] = '';
+$config['website_name'] = 'WoW-Ragnaros';
 
 /**
  *
@@ -54,7 +54,7 @@ $config['redis_in_cms'] = true;
  *  Write the invitation of your discord channel.
  *
  */
-$config['discord_invitation'] = 'W7F4nRW';
+$config['discord_invitation'] = 'F23REFWD';
 
 /**
  *
@@ -63,7 +63,7 @@ $config['discord_invitation'] = 'W7F4nRW';
  *  Write the realmlist used on your server to publish it on the website.
  *
  */
-$config['realmlist'] = '';
+$config['realmlist'] = 'wowragnaros.com';
 
 /**
  *  Bnet enabled?
@@ -113,7 +113,7 @@ $config['expansion'] = '1';
  *  Default: default
  *
  */
-$config['theme_name'] = '%THEME%';
+$config['theme_name'] = 'yesilcms';
 
 /**
  *
@@ -203,7 +203,7 @@ $config['mod_access_level'] = '2';
  *  Warning: Don't change this configuration.
  *
  */
-$config['migrate_status'] = '1';
+$config['migrate_status'] = '0';
 
 /**
  *

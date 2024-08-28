@@ -10,7 +10,6 @@
               <?php if ($this->wowmodule->getUCPStatus() == '1'): ?>
               <li><a href="<?= base_url('panel'); ?>"><i class="fas fa-user-circle"></i> <?= $this->lang->line('tab_account'); ?></a></li>
               <?php endif; ?>
-              <li class="uk-nav-divider"></li>
               <?php if ($this->wowmodule->getDonationStatus() == '1'): ?>
               <li><a href="<?= base_url('donate'); ?>"><i class="fas fa-hand-holding-usd"></i> <?=$this->lang->line('navbar_donate_panel'); ?></a></li>
               <?php endif; ?>

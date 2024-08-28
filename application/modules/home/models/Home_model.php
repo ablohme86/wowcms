@@ -74,7 +74,7 @@ class Home_model extends CI_Model
         $blizz->write('migrate_status', '0');
     }
 
-    public function insertRealm($hostname, $username, $password, $database, $realm_id, $soaphost, $soapuser, $soappass, $soapport, $emulator): bool
+    public function insertRealm($hostname, $username, $password, $database, $realm_id, $soaphost, $soapuser, $soappass, $soapport, $emulator, $expansion): bool
     {
         $data = array(
             'hostname'         => $hostname,
@@ -86,7 +86,8 @@ class Home_model extends CI_Model
             'console_username' => $soapuser,
             'console_password' => $soappass,
             'console_port'     => $soapport,
-            'emulator'         => $emulator
+            'emulator'         => $emulator,
+			'expansion'			=> $expansion
         );
 
         $this->db->insert('realms', $data);

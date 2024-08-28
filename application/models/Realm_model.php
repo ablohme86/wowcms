@@ -18,6 +18,10 @@ class Realm_model extends CI_Model
         parent::__construct();
         $this->RealmStatus = null;
         $this->auth        = $this->load->database('auth', true);
+		$this->auth_tbc        = $this->load->database('auth_tbc', true);
+		$this->cms_db = $this->load->database('default',true);
+
+
     }
 
     /**
@@ -33,10 +37,22 @@ class Realm_model extends CI_Model
      *
      * @return CI_DB_result
      */
-    public function getRealm($id): CI_DB_result
+    public function getRealm($actual_keyid): CI_DB_result	// Den eneste som faktisk gir 'id' av realms i cms db
     {
-        return $this->db->select('*')->where('id', $id)->get('realms');
+   		$realm = $this->db->select('*')->where('id', $actual_keyid)->get('realms');
+	//	printf("Trying to getRealm on id: %d", $actual_keyid);
+        return $realm; 
     }
+
+
+	// added by: A. Blohme
+	public function getServersRealmID($id)
+	{
+		// A. Blohme: Why does this just return 0 on realmID?? $id is correct.. Fix tomorrow from here !!!
+     	$result = $this->cms_db->select('realmID')->where('id', $id)->get('realms')->row('realmID');		
+     	
+     	return $result;
+	}
 
 
     /**
@@ -44,9 +60,18 @@ class Realm_model extends CI_Model
      *
      * @return mixed
      */
-    public function getRealmPort($id)
+     
+     // Added by; A. Blohme
+     public function isTbc($keyid)
+     {
+
+     	$result = $this->cms_db->select('*')->where('id', $keyid)->get('realms')->row('expansion');     	
+     	return $result;
+     }
+     
+    public function getRealmPort($id)	// denne gir bare 'realmID' da denne henter direkte fra wow realmd datasen
     {
-        return $this->auth->select('port')->where('id', $id)->get('realmlist')->row('port');
+    	return $this->auth->select('port')->where('id', $id)->get('realmlist')->row('port');    
     }
 
     /**
@@ -95,15 +120,22 @@ class Realm_model extends CI_Model
      */
     public function getRealmConnectionData($id)
     {
+//		printf("getRealConnectionData: %d", $id);
         $data = $this->getRealm($id)->row_array();
 
         if ($data > 0) {
-            return $this->realmConnection(
+            $ret_data = $this->realmConnection(
+            
                 $data['username'],
                 $data['password'],
                 $data['hostname'],
-                $data['char_database']
+                $data['char_database'],
+                $data['expansion'],
+                $data['id'],
+                $data['realmID']
             );
+            		//print_r($ret_data);
+            return $ret_data;
         }
 
         return false;
@@ -117,7 +149,7 @@ class Realm_model extends CI_Model
      *
      * @return bool|object
      */
-    public function realmConnection($username, $password, $hostname, $database)
+    public function realmConnection($username, $password, $hostname, $database, $realmid = 0) 
     {
         $dsn = 'mysqli://' .
                $username . ':' .
@@ -133,9 +165,24 @@ class Realm_model extends CI_Model
      *
      * @return mixed
      */
+     
+     // Edited, A. Blohme:
+     
+     // Replaced $id with the REAL 'realms' ID so we can check for expansion number
+     // The turk had just used "realmID" when calling for these functions, which I found so confusing....
+     // Now I can easily check if this is an expansion pack... Why didnt he just use 'id' from the start? 
+     
     public function getRealmName($id)
     {
-        return $this->auth->select('name')->where('id', $id)->get('realmlist')->row('name');
+    	//printf("getRealmName id: %d<br>", $id);
+    	if ($this->isTbc($id) == 0)
+    	{
+        	return $this->auth->select('name')->where('id', $this->getServersRealmID( $id))->get('realmlist')->row('name');
+        }
+        else
+        {	
+        	return $this->auth_tbc->select('name')->where('id', $this->getServersRealmID( $id))->get('realmlist')->row('name');
+        }
     }
 
     /**
@@ -145,7 +192,16 @@ class Realm_model extends CI_Model
      */
     public function realmGetHostname($id)
     {
-        return $this->auth->select('address')->where('id', $id)->get('realmlist')->row('address');
+    	if ($this->isTbc($id) == 0)
+    	{
+        	return $this->auth->select('address')->where('id', $id)->get('realmlist')->row('address');
+        }
+        else
+        {
+        	return $this->auth_tbc->select('address')->where('id', $id)->get('realmlist')->row('address');
+        }
+        
+
     }
 
     /**
@@ -155,7 +211,16 @@ class Realm_model extends CI_Model
      */
     public function realmGetHostnameLocal($id)
     {
-        return $this->auth->select('localAddress')->where('id', $id)->get('realmlist')->row('localAddress');
+    	if ($this->isTbc($id) == 0)
+    	{
+        	return $this->auth->select('localAddress')->where('id', $id)->get('realmlist')->row('localAddress');
+        }
+        else
+        {
+        	return $this->auth_tbc->select('localAddress')->where('id', $id)->get('realmlist')->row('localAddress');
+        }
+        
+
     }
 
     /**
@@ -164,7 +229,7 @@ class Realm_model extends CI_Model
      *
      * @return mixed
      */
-    public function getGeneralCharactersSpecifyAcc($multiRealm, $id)
+    public function getGeneralCharactersSpecifyAcc($multiRealm, $id)	
     {
         $this->multiRealm = $multiRealm;
 
@@ -272,6 +337,7 @@ class Realm_model extends CI_Model
     {
         $this->multiRealm = $multiRealm;
 
+		
         return $this->multiRealm->select('name')->where('guid', $id)->get('characters')->row('name');
     }
 
@@ -284,8 +350,34 @@ class Realm_model extends CI_Model
     public function getCharHKs($id, $multiRealm)
     {
         $this->multiRealm = $multiRealm;
+        
+        $oldVanillaCP = $this->multiRealm->query("SHOW TABLES LIKE 'character_honor_cp'")->num_rows() > 0;
+        
+         if ($oldVanillaCP) {
+            return $this->multiRealm->select('count(guid)')->where('guid', $id)->where('type', 1)->get('character_honor_cp')->row('count(guid)');
 
-        return $this->multiRealm->select('count(guid)')->where('guid', $id)->where('type', 1)->get('character_honor_cp')->row('count(guid)');
+         }
+         else
+         {
+          return $this->multiRealm->select('totalKills')->where('guid', $id)->get('characters')->row('totalKills');
+         }
+         
+        echo "This is the HK table:";
+        print_r($hkTable);
+		/*if ($this->isTbc($realmid) == 0) 
+		{
+		}
+		else
+		{
+			//print_r($multiRealm);
+			echo "Totally kills " . $kills;
+			return $kills;
+		}
+         */
+         return 0;
+
+
+
     }
 
     /**
@@ -336,8 +428,10 @@ class Realm_model extends CI_Model
     public function getCharRace($id, $multiRealm)
     {
         $this->multiRealm = $multiRealm;
-
-        return $this->multiRealm->select('race')->where('guid', $id)->get('characters')->row('race');
+        //echo "dette er racen:";
+        $svar = $this->multiRealm->select('race')->where('guid', $id)->get('characters')->row('race');
+        print_r($svar);
+        return $svar;
     }
 
     /**

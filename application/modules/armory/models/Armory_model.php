@@ -2,6 +2,8 @@
 
 defined('BASEPATH') or exit('No direct script access allowed');
 
+$development = false;
+
 /**
  * @property               $multiRealm
  * @property Armory_model  $armory_model
@@ -23,9 +25,10 @@ class Armory_model extends CI_Model
     public function getPlayerInfo($MultiRealm, $id)
     {
         $this->multiRealm = $MultiRealm;
-
-        return $this->multiRealm->select('*')->where('guid', $id)->get('characters')->row_array();
-    }
+		$charInfoRes = $this->multiRealm->select('*')->where('guid', $id)->get('characters')->row_array();
+		//print_r($charInfoRes);
+			return    $charInfoRes;
+		}
 
     public function getPlayerRace($MultiRealm, $id)
     {
@@ -34,15 +37,17 @@ class Armory_model extends CI_Model
         return $this->multiRealm->select('race')->where('guid', $id)->get('characters')->row('race');
     }
 
-    public function getCharEquipments($MultiRealm, $id, $patch = null)
+    public function getCharEquipments($MultiRealm,$realmid, $playerid, $patch = null)
     {
-        $this->multiRealm = $MultiRealm;
-        $equipmentCache   = $this->wowgeneral->getRedisCMS() ? $this->cache->redis->get('equipmentArrayID_' . $id . '-P_' . ($patch ?? '10')) : false;
-
-        if ($equipmentCache) {
+		$this->multiRealm = $MultiRealm;
+        $equipmentCache   = $this->wowgeneral->getRedisCMS() ? $this->cache->redis->get('equipmentArrayID_' . $playerid . '-P_10') : false;
+	     if ($equipmentCache && $development == false) 
+		{
             $itemList = $equipmentCache;
-        } else {
-            $result = $this->multiRealm->select('slot, item_id')->where('guid', $id)->where('bag', '0')->where('slot >=', '0')->where('slot <=', '18')->get('character_inventory')->result_array();
+        } 
+		else 
+		{
+            $result = $this->multiRealm->select('slot, item_template')->where('guid', $playerid)->where('bag', '0')->where('slot >=', '0')->where('slot <=', '18')->get('character_inventory')->result_array();
 
             // Item slots
             $slots = [
@@ -69,45 +74,57 @@ class Armory_model extends CI_Model
 
             $itemList = [];
 
-            foreach ($result as $item) {
-                $qualityPatch                    = $this->getCharEquipmentQualityPatch($item['item_id'], $patch);
+            foreach ($result as $item) 
+            {
+                $qualityPatch                    = $this->getCharEquipmentQualityPatch($item['item_template'], $realmid,$patch);
                 $itemList[$slots[$item['slot']]] = [
-                    'item_id'      => $item['item_id'],
+                    'item'      => $item['item_template'],
                     'item_slot_id' => $item['slot'],
-                    'item_quality' => $qualityPatch['quality'] ?? 0,
-                    'item_patch'   => $qualityPatch['patch'] ?? 10,
-                    'item_icon'    => $this->getCharEquipDisplayIcon($item['item_id'], $patch)
+                    'item_quality' => $qualityPatch['Quality'] ?? 0,
+                    'item_icon'    => $this->getCharEquipDisplayIcon($item['item_template'], $patch)
                 ];
             }
 
-            if ($this->wowgeneral->getRedisCMS()) {
+            if ($this->wowgeneral->getRedisCMS() && $development == false) {
                 // Cache for 15 minutes
-                $this->cache->redis->save('equipmentArrayID_' . $id . '-P_' . ($patch ?? '10'), $itemList, 60 * 15);
+                $this->cache->redis->save('equipmentArrayID_' . $playerid . '-P_' . ($patch ?? '10'), $itemList, 60 * 15);
             }
         }
 
         return $itemList;
     }
 
-    public function getCharEquipmentQualityPatch($id, $patch = null)
+
+	    public function getCharEquipmentQualityPatch($playerid,$realmid, $patch = null)
     {
-        $world = $this->load->database('world', true);
+        //echo "realm id is: " . $realmid;
+        $isExp = $this->wowrealm->isTbc($realmid);                
+        switch ($isExp) 
+        {
+            case 0:
+        $world              = $this->load->database('world', true);
+            break;
+        
+            case 1:
+        $world              = $this->load->database('world_tbc', true);
+            break;
+        }
+        
+			$patch = null;
 
-        if (isset($id) && ! empty($id) && ctype_digit($id)) {
-            $qualityPatchCache = $this->wowgeneral->getRedisCMS() ? $this->cache->redis->get('itemQualityPatchID_' . $id . '-P_' . ($patch ?? '10')) : false;
+        if (isset($playerid) && ! empty($playerid) && ctype_digit($playerid)) {
+            $qualityPatchCache = $this->wowgeneral->getRedisCMS() ? $this->cache->redis->get('itemQualityPatchID_' . $playerid . '-P_' . ($patch ?? '10')) : false;
 
-            if ($qualityPatchCache) {
+            if ($qualityPatchCache && $development == false) {
                 $itemQualityPatch = $qualityPatchCache;
             } else {
-                $itemQualityPatch = $world->select('quality, MAX(patch) AS patch')->where('entry', $id)->where('patch <=', $patch ?? '10')->get('item_template')->row_array('patch, quality');
+            $itemQualityPatch = $world->select('Quality')->where('entry', $playerid)->get('item_template')->row_array('Quality');
 
-                if (! $itemQualityPatch['quality'] || $itemQualityPatch['quality'] > 6 || $itemQualityPatch['patch'] > 10) {
-                    $itemQualityPatch['quality'] = 99; //let user know that the equipped item doesn't exist in selected patch
-                }
+               
 
-                if ($this->wowgeneral->getRedisCMS()) {
+                if ($this->wowgeneral->getRedisCMS() && $development == false) {
                     // Cache for 30 day
-                    $this->cache->redis->save('itemQualityPatchID_' . $id . '-P_' . ($patch ?? '10'), $itemQualityPatch, 60 * 60 * 24 * 30);
+                    $this->cache->redis->save('itemQualityPatchID_' . $playerid . '-P_10', $itemQualityPatch, 60 * 60 * 24 * 30);
                 }
             }
         }
@@ -115,22 +132,23 @@ class Armory_model extends CI_Model
         return $itemQualityPatch ?? [];
     }
 
-    public function getCharStats($MultiRealm, $id, $patch = null)
+
+    public function getCharStats($MultiRealm, $playerid, $patch = null)
     {
         $this->multiRealm = $MultiRealm;
-        $chatStatCache    = $this->wowgeneral->getRedisCMS() ? $this->cache->redis->get('charStatArrayID_' . $id . '-P_' . ($patch ?? '10')) : false;
+        $chatStatCache    = $this->wowgeneral->getRedisCMS() ? $this->cache->redis->get('charStatArrayID_' . $playerid . '-P_' . ($patch ?? '10')) : false;
 
-        if ($chatStatCache) {
+        if ($chatStatCache && $development == false) {
             $charStat = $chatStatCache;
         } else {
-            $charStat = $this->multiRealm->select('*')->where('guid', $id)->get('character_stats');
+            $charStat = $this->multiRealm->select('*')->where('guid', $playerid)->get('character_stats');
 
             if ($charStat->num_rows() > 0) {
                 $charStat = $charStat->row();
 
-                if ($this->wowgeneral->getRedisCMS()) {
+                if ($this->wowgeneral->getRedisCMS() && $development == false) {
                     // Cache for 15 minutes
-                    $this->cache->redis->save('charStatArrayID_' . $id . '-P_' . ($patch ?? '10'), $charStat, 60 * 15);
+                    $this->cache->redis->save('charStatArrayID_' . $playerid . '-P_' . ($patch ?? '10'), $charStat, 60 * 15);
                 }
             } else {
                 $charStat = null;
@@ -140,12 +158,23 @@ class Armory_model extends CI_Model
         return $charStat;
     }
 
-    public function calculateAuras($MultiRealm, $id, int $race, int $class, int $level, $equippedItemIDs, $patch = null): array
+    public function calculateAuras($MultiRealm,$realmid, $id, int $race, int $class, int $level, $equippedItemIDs, $patch = null): array
     {
+
         $this->multiRealm = $MultiRealm;
         $savedStats       = $this->getCharStats($MultiRealm, $id, $patch) ?? null;
-        $world            = $this->load->database('world', true);
-        $subQ             = $world->select("max(patch)", false)->where("t1.entry=t2.entry")->where("patch <=", $patch ?? '10')->get_compiled_select("item_template t2");
+        $isExp = $this->wowrealm->isTbc($realmid);                
+        switch ($isExp) 
+        {
+            case 0:
+        $world              = $this->load->database('world', true);
+            break;
+        
+            case 1:
+        $world              = $this->load->database('world_tbc', true);
+            break;
+        }
+        $subQ             = $world->select("*", false)->where("t1.entry=t2.entry")->get_compiled_select("item_template t2");
         $auras            = [];
         $finalStats       = [];
 
@@ -190,13 +219,13 @@ class Armory_model extends CI_Model
         } else {
             $baseStatsCache = $this->wowgeneral->getRedisCMS() ? $this->cache->redis->get('baseStatsArrayRCID_' . $race . '_' . $class) : false;
 
-            if ($baseStatsCache) {
+            if ($baseStatsCache && $development == false) {
                 $baseStats = $baseStatsCache;
             } else {
                 //assuming character_stats is enabled on VMaNGOS config, this part is just a fallback for initial stats and can be implemented for entire solution
                 $baseStats = $world->select('str, agi, sta, inte, spi')->where('race', $race)->where('class', $class)->where('level', $level)->get('player_levelstats')->row_array();
 
-                if ($this->wowgeneral->getRedisCMS()) {
+                if ($this->wowgeneral->getRedisCMS() && $development == false) {
                     // Cache for 30 day
                     $this->cache->redis->save('baseStatsArrayRCID_' . $race . '_' . $class, $baseStats, 60 * 60 * 24 * 30);
                 }
@@ -213,20 +242,20 @@ class Armory_model extends CI_Model
             $finalStats['powerAttack']       = calculateMeleeAP($class, $level, $baseStats['str'], $baseStats['agi']);
             $finalStats['powerRangedAttack'] = calculateRangedAP($class, $level, $baseStats['agi']);
         }
-
+		
         if ($equippedItemIDs) {
             $itemStatsCache = $this->wowgeneral->getRedisCMS() ? $this->cache->redis->get('itemStatsArrayID_' . $id . '-P_' . ($patch ?? '10')) : false;
 
-            if ($itemStatsCache) {
+            if ($itemStatsCache && $development == false) {
                 $itemStats = $itemStatsCache;
             } else {
                 $selectSpells = 'spellid_1, spellid_2, spellid_3, spellid_4, spellid_5';
                 $selectStats  = 'stat_type1, stat_value1, stat_type2, stat_value2, stat_type3, stat_value3, stat_type4, stat_value4, stat_type5, stat_value5,
                              stat_type6, stat_value6, stat_type7, stat_value7, stat_type8, stat_value8, stat_type9, stat_value9, stat_type10, stat_value10';
 
-                $itemStats = $world->select($selectSpells . ',' . $selectStats)->where_in('entry', $equippedItemIDs)->where('patch=(' . $subQ . ')')->get('item_template t1')->result();
+                $itemStats = $world->select($selectSpells . ',' . $selectStats)->where_in('entry', $equippedItemIDs)->get('item_template t1')->result();
 
-                if ($this->wowgeneral->getRedisCMS()) {
+                if ($this->wowgeneral->getRedisCMS() && $development == false) {
                     // Cache for 15 minutes
                     $this->cache->redis->save('itemStatsArrayID_' . $id . '-P_' . ($patch ?? '10'), $itemStats, 60 * 15);
                 }
@@ -281,12 +310,12 @@ class Armory_model extends CI_Model
             if (! empty($auras)) {
                 $spellTemplateCache = $this->wowgeneral->getRedisCMS() ? $this->cache->redis->get('spellTemplateArrayID_' . $id . '-P_' . ($patch ?? '10')) : false;
 
-                if ($spellTemplateCache) {
+                if ($spellTemplateCache && $development == false) {
                     $spells = $spellTemplateCache;
                 } else {
-                    $spells = $world->select('entry, build, school, description, effectApplyAuraName1, effectBasePoints1, effectMiscValue1')->where_in('entry', $auras)->where('(entry, build) IN (SELECT entry, MAX(build) FROM spell_template GROUP BY entry)', null, false)->where('spellIconId <=', 1)->get('spell_template')->result();
+                    $spells = $world->select('Id, School,  EffectApplyAuraName1, EffectBasePoints1, EffectMiscValue1')->where_in('Id', $auras)->where('(Id) IN (SELECT Id FROM spell_template GROUP BY Id)', null, false)->where('SpellIconID <=', 1)->get('spell_template')->result();
 
-                    if ($this->wowgeneral->getRedisCMS()) {
+                    if ($this->wowgeneral->getRedisCMS() && $development == false) {
                         // Cache for 15 minutes
                         $this->cache->redis->save('spellTemplateArrayID_' . $id . '-P_' . ($patch ?? '10'), $spells, 60 * 15);
                     }
@@ -345,7 +374,7 @@ class Armory_model extends CI_Model
                 "arcane" => $finalStats['spellArcane']
             ];
 
-            $equippedItemIDsByPatch = $world->select('entry')->where('patch=(' . $subQ . ')')->where_in('entry', $equippedItemIDs)->get('item_template t1')->result_array('entry');
+            $equippedItemIDsByPatch = $world->select('entry')->where_in('entry', $equippedItemIDs)->get('item_template t1')->result_array('entry');
             $equippedItemIDsByPatch = array_map('intval', array_column($equippedItemIDsByPatch, 'entry'));
 
             $enchAuras = $this->getEnchantInfo($MultiRealm, $id, $equippedItemIDsByPatch);
@@ -438,36 +467,44 @@ class Armory_model extends CI_Model
 
             // Finalize stats
             $finalStats['powerHealing'] = $finalStats['powerSpell'] + $finalStats['powerHealing'];
-            $finalStats['critSpell']    = $finalStats['critSpell'] + getAdditionalSpellCrit($class, $finalStats['statInt']);
-            $finalStats['defManaRegen'] = $finalStats['defManaRegen'] + getAdditionalMP5($class, $finalStats['statSpr']);
-        }
+			
+			// A. Blohme: 22.08.24, 12:36 CET:
+			// These two doesnt work for now in TBC, reserve them for Classic only for now!
+			if ($this->wowrealm->isTbc($realmid) == 0) 
+			{
+				$finalStats['critSpell']    = $finalStats['critSpell'] + getAdditionalSpellCrit($class, $finalStats['statInt']);
+				$finalStats['defManaRegen'] = $finalStats['defManaRegen'] + getAdditionalMP5($class, $finalStats['statSpr']);
+			}
 
+        }
+	
         return $finalStats;
     }
 
-    public function getCharProfessions($MultiRealm, $id, $type = false)
+    public function getCharProfessions($MultiRealm, $realmid,$playerid, $type = false)
     {
+		//print_r($MultiRealm);
         $professionPCache = [];
         $professionSCache = [];
 
         // Ordered by pair for view by specific type
         if ($type == 'P') {
             $professionIDs    = [164, 202, 186, 165, 393, 171, 182, 197, 333];
-            $professionPCache = $this->wowgeneral->getRedisCMS() ? $this->cache->redis->get('professionPArrayID_' . $id) : false;
+            $professionPCache = $this->wowgeneral->getRedisCMS() ? $this->cache->redis->get('professionPArrayID_' . $playerid) : false;
         } elseif ($type == 'S') {
             $professionIDs    = [129, 185, 356];
-            $professionSCache = $this->wowgeneral->getRedisCMS() ? $this->cache->redis->get('professionSArrayID_' . $id) : false;
+            $professionSCache = $this->wowgeneral->getRedisCMS() ? $this->cache->redis->get('professionSArrayID_' . $playerid) : false;
         } else {
             $professionIDs = [164, 202, 186, 165, 393, 171, 182, 197, 333, 129, 185, 356];
         }
 
-        if ($type == 'P' && $professionPCache) {
+        if ($type == 'P' && $professionPCache && $development == false) {
             $result = $professionPCache;
-        } elseif ($type == 'S' && $professionSCache) {
+        } elseif ($type == 'S' && $professionSCache && $development == false) {
             $result = $professionSCache;
         } else {
             $this->multiRealm = $MultiRealm;
-            $this->multiRealm->select('*')->where_in('skill', $professionIDs)->where('guid', $id);
+            $this->multiRealm->select('*')->where_in('skill', $professionIDs)->where('guid', $playerid);
             $this->multiRealm->protect_identifiers = false;
             $order                                 = sprintf('FIELD(skill, %s)', implode(', ', $professionIDs));
             $this->multiRealm->order_by($order);
@@ -492,9 +529,9 @@ class Armory_model extends CI_Model
             if ($this->wowgeneral->getRedisCMS() && $result) {
                 // Cache for 6 hour
                 if ($type == 'P') {
-                    $this->cache->redis->save('professionPArrayID_' . $id, $result, 60 * 60 * 6);
+                    $this->cache->redis->save('professionPArrayID_' . $playerid, $result, 60 * 60 * 6);
                 } elseif ($type == 'S') {
-                    $this->cache->redis->save('professionSArrayID_' . $id, $result, 60 * 60 * 6);
+                    $this->cache->redis->save('professionSArrayID_' . $playerid, $result, 60 * 60 * 6);
                 }
             }
         }
@@ -502,22 +539,22 @@ class Armory_model extends CI_Model
         return $result;
     }
 
-    public function getEnchantInfo($MultiRealm, $id, $equippedItemIDs): array
+    public function getEnchantInfo($MultiRealm,$playerid, $equippedItemIDs): array
     {
         $this->multiRealm = $MultiRealm;
         $result           = [];
 
+        
         if ($equippedItemIDs) {
             $equippedItemGuidList = array_column(
-                $this->multiRealm->select('item_id, item_guid')->where('guid', $id)->where('slot >=', 0)->where('slot <=', 18)->where('bag', 0)
-                                 ->where_in('item_id', $equippedItemIDs)->order_by('slot', 'ASC')->get('character_inventory')->result_array(), 'item_guid'
+                $this->multiRealm->select('item, item')->where('guid', $playerid)->where('slot >=', 0)->where('slot <=', 18)->where('bag', 0)->where_in('item', $equippedItemIDs)->order_by('slot', 'ASC')->get('character_inventory')->result_array(), 'item_guid'
             );
             if (! empty($equippedItemGuidList)) {
-                $enchants = $this->multiRealm->select('item_id, enchantments')->where('owner_guid', $id)->where_in('guid', $equippedItemGuidList)->get('item_instance')->result_array();
+                $enchants = $this->multiRealm->select('item, enchantments')->where('owner_guid', $playerid)->where_in('guid', $equippedItemGuidList)->get('item_instance')->result_array();
 
                 foreach ($enchants as $ench) {
                     $enchAura = strtok($ench['enchantments'], ' ');
-                    $enchAura == 0 ?: $result[$ench['item_id']] = $enchAura;
+                    $enchAura == 0 ?: $result[$ench['item']] = $enchAura;
                     // effectMiscValue1 on spell_template to automate the process
                 }
             }
@@ -552,32 +589,57 @@ class Armory_model extends CI_Model
         return false;
     }
 
-    public function getTotalHK($MultiRealm, $id)
+    public function getTotalHK($MultiRealm,$realmid, $id)	
     {
+		
         $this->multiRealm = $MultiRealm;
+		
+        if ($this->wowrealm->isTbc($realmid) != 0) 
+		{
+			$hkRes = $this->multiRealm->select('totalKills')->where('guid', $id)->get('characters')->row('totalKills');
+			return $hkRes;
 
-        return $this->multiRealm->select('honor_stored_hk')->where('guid', $id)->get('characters')->row('honor_stored_hk') +
+		}
+        return $this->multiRealm->select('stored_honorable_kills')->where('guid', $id)->get('characters')->row('stored_honorable_kills') +
                $this->multiRealm->select('count(guid)')->where('guid', $id)->where('type', 1)->get('character_honor_cp')->row('count(guid)');
     }
 
-    public function getTotalDK($MultiRealm, $id)
+    public function getTotalDK($MultiRealm,$realmid, $id)
     {
+
+		if ($this->wowrealm->isTbc($realmid) != 0) {
+			echo "DK did not exist in TBC and onwards...";
+			return false;
+		}
+
         $this->multiRealm = $MultiRealm;
 
-        return $this->multiRealm->select('honor_stored_dk')->where('guid', $id)->get('characters')->row('honor_stored_dk') +
+        return $this->multiRealm->select('stored_dishonorable_kills')->where('guid', $id)->get('characters')->row('stored_dishonorable_kills') +
                $this->multiRealm->select('count(guid)')->where('guid', $id)->where('type', 2)->get('character_honor_cp')->row('count(guid)');
     }
 
-    public function getCurrentPVPRank($MultiRealm, $id)
+    public function getCurrentPVPRank($MultiRealm,$realmid, $id)
     {
+		//print_r($MultiRealm);
         $this->multiRealm    = $MultiRealm;
+        
+        
+        // A. Blohme: 22.08.24:
+        // If TBC then just return 0 for now since we must do something here 
+        if ($this->wowrealm->isTbc($realmid))
+        {
+            return 0;
+        }
+        
         $honorRankPointCache = $this->wowgeneral->getRedisCMS() ? $this->cache->redis->get('honorRankPointFArrayID_' . $id) : false;
-
-        if ($honorRankPointCache) {
+        
+        if ($honorRankPointCache && $development == false) {
             $rank = $honorRankPointCache;
-        } else {
-            $honorDetails   = $this->multiRealm->select('honor_rank_points, honor_stored_hk')->where('guid', $id)->get('characters');
-            $honorRankPoint = $honorDetails->row('honor_rank_points') ?? 0;
+        } 
+        else 
+        {
+            $honorDetails   = $this->multiRealm->select('stored_honor_rating, stored_honorable_kills')->where('guid', $id)->get('characters');
+            $honorRankPoint = $honorDetails->row('stored_honor_rating') ?? 0;
 
             if ($honorDetails->row('honor_stored_hk') > 15 && $honorRankPoint < 2000) {
                 $rank = ['rank' => 1, 'icon' => 'PvP_R1', 'a_title' => 'Private', 'h_title' => 'Scout'];
@@ -611,7 +673,7 @@ class Armory_model extends CI_Model
                 $rank = ['rank' => 0, 'icon' => 'PvP_R0', 'a_title' => 'N/A', 'h_title' => 'N/A'];
             }
 
-            if ($this->wowgeneral->getRedisCMS()) {
+            if ($this->wowgeneral->getRedisCMS() && $development == false) {
                 // Cache for 6 hour
                 $this->cache->redis->save('honorRankPointFArrayID_' . $id, $rank, 60 * 60 * 6);
             }
@@ -620,8 +682,20 @@ class Armory_model extends CI_Model
         return $rank;
     }
 
-    public function getCharEquipDisplayModel($id, $equipment, $class, $fallback, $patch = false): array
+    public function getCharEquipDisplayModel($id,$realmid, $equipment, $class, $fallback, $patch = false): array
     {
+        
+        $isExp = $this->wowrealm->isTbc($realmid);                
+        switch ($isExp) 
+        {
+            case 0:
+        $world              = $this->load->database('world', true);
+            break;
+        
+            case 1:
+        $world              = $this->load->database('world_tbc', true);
+            break;
+        }
         $world              = $this->load->database('world', true);
         $subQ               = $world->select("max(patch)", false)->where("t1.entry=t2.entry")->where("patch <=", $patch ?? '10')->get_compiled_select("item_template t2");
         $ignoredItems       = [2, 11, 12, 15, 24, 25, 26, 27, 28];
@@ -633,21 +707,21 @@ class Armory_model extends CI_Model
             $ignoredItems = [2, 11, 12, 13, 17, 21, 22, 24, 25, 27, 28];
         }
         if ($fallback) {
-            if ($displayModelFCache) {
+            if ($displayModelFCache && $development == false) {
                 $itemArr = $displayModelFCache;
             } else {
                 $itemArr = [];
-                $result  = $world->select('entry, display_id, inventory_type')->where('patch=(' . $subQ . ')')->where_in('entry', $equipment)->where_not_in('inventory_type', $ignoredItems)->order_by('inventory_type')->get('item_template t1')->result_array();
+                $result  = $world->select('entry, displayid, InventoryType')->where_in('entry', $equipment)->where_not_in('InventoryType', $ignoredItems)->order_by('InventoryType')->get('item_template t1')->result_array();
 
                 if ($result) {
                     foreach ($result as $item) {
                         $items       = new stdClass();
-                        $items->item = (object)['entry' => $item['entry'], 'displayid' => $item['display_id']];
-                        $items->slot = $item['inventory_type'];
+                        $items->item = (object)['entry' => $item['entry'], 'displayid' => $item['displayid']];
+                        $items->slot = $item['InventoryType'];
                         $itemArr[]   = $items;
                     }
 
-                    if ($this->wowgeneral->getRedisCMS()) {
+                    if ($this->wowgeneral->getRedisCMS() && $development == false) {
                         // Cache for 1 hour
                         $this->cache->redis->save('displayModelFArrayID_' . $id . '-P_' . ($patch ?? '10'), $itemArr, 60 * 60);
                     }
@@ -656,12 +730,12 @@ class Armory_model extends CI_Model
 
             return $itemArr;
         } else {
-            if ($displayModelCache) {
+            if ($displayModelCache && $development == false) {
                 $itemObj = $displayModelCache;
             } else {
-                $itemObj = $world->select('inventory_type, display_id')->where('patch=(' . $subQ . ')')->where_in('entry', $equipment)->where_not_in('inventory_type', $ignoredItems)->order_by('inventory_type')->get('item_template t1')->result();
+                $itemObj = $world->select('InventoryType, displayid')->where_in('entry', $equipment)->where_not_in('InventoryType', $ignoredItems)->order_by('InventoryType')->get('item_template t1')->result();
 
-                if ($this->wowgeneral->getRedisCMS()) {
+                if ($this->wowgeneral->getRedisCMS() && $development == false) {
                     // Cache for 1 hour
                     $this->cache->redis->save('displayModelArrayID_' . $id . '-P_' . ($patch ?? '10'), $itemObj, 60 * 60);
                 }
@@ -671,14 +745,27 @@ class Armory_model extends CI_Model
         return $itemObj;
     }
 
-    public function getCharEquipDisplayIconName($id, $patch = null)
+		// A. Blohme,. 25.08.24: We need to add support for TBC in display
+		// because it will always return "UNKNOWN" icon on the tooltip system!
+    public function getCharEquipDisplayIconName($id, $realmid,$patch = null)
     {
+        $isExp = $this->wowrealm->isTbc($realmid);                
+        switch ($isExp) 
+        {
+            case 0:
+        $world              = $this->load->database('world', true);
+            break;
+        
+            case 1:
+        $world              = $this->load->database('world_tbc', true);
+            break;
+        }
         $world = $this->load->database('world', true);
-        $world->select('i.icon, MAX(t.patch) AS patch');
+        $world->select('i.icon');
         $world->from('item_display_info i');
-        $world->join('item_template t', 'i.ID = t.display_id', 'left');
+        $world->join('item_template t', 'i.ID = t.displayid', 'left');
         $world->where('t.entry', $id);
-        $world->where('patch <=', $patch ?? '10');
+        
         $result = $world->get();
 
         if ($result->num_rows() > 0) {
@@ -688,20 +775,20 @@ class Armory_model extends CI_Model
         return false;
     }
 
-    public function getCharEquipDisplayIcon($id, $patch = null): string
+    public function getCharEquipDisplayIcon($id, $realmid,$patch = null): string
     {
         if (isset($id) && ! empty($id) && ctype_digit($id)) {
             $displayCache = $this->wowgeneral->getRedisCMS() ? $this->cache->redis->get('itemDisplayID_' . $id . '-P_' . ($patch ?? '10')) : false;
 
-            if ($displayCache) {
+            if ($displayCache && $development == false) {
                 $displayName = $displayCache;
             } else {
-                $displayName = $this->armory_model->getCharEquipDisplayIconName($id, $patch);
+                $displayName = $this->armory_model->getCharEquipDisplayIconName($id, $realmid,$patch);
 
                 if (! $displayName) {
                     $displayName = 'INV_Misc_QuestionMark';
                 }
-                if ($this->wowgeneral->getRedisCMS()) {
+                if ($this->wowgeneral->getRedisCMS() && $development == false) {
                     // Cache for 7 day
                     $this->cache->redis->save('itemDisplayID_' . $id . '-P_' . ($patch ?? '10'), $displayName, 60 * 60 * 24 * 7);
                 }
@@ -731,16 +818,16 @@ class Armory_model extends CI_Model
     {
         $this->multiRealm = $MultiRealm;
 
-        return $this->multiRealm->select('*')->where('guild_id', $guildid)->get('guild');
+        return $this->multiRealm->select('*')->where('guildid', $guildid)->get('guild');
     }
 
     public function getGuildMembers($MultiRealm, $guildid)
     {
         $this->multiRealm = $MultiRealm;
-        $this->multiRealm->select('a.guid,a.name,a.race,a.class, a.gender,a.level,b.guild_id');
+        $this->multiRealm->select('a.guid,a.name,a.race,a.class, a.gender,a.level,b.guildid');
         $this->multiRealm->from('characters a');
         $this->multiRealm->join('guild_member b', 'a.guid = b.guid', 'left');
-        $this->multiRealm->where('guild_id', $guildid);
+        $this->multiRealm->where('guildid', $guildid);
 
         return $this->multiRealm->get();
     }
@@ -748,9 +835,9 @@ class Armory_model extends CI_Model
     public function getGuildInfoByPlayerID($MultiRealm, $playerid): array
     {
         $this->multiRealm = $MultiRealm;
-        $this->multiRealm->select('g.guild_id, g.name');
+        $this->multiRealm->select('g.guildid, g.name');
         $this->multiRealm->from('guild g');
-        $this->multiRealm->join('guild_member gm', 'g.guild_id = gm.guild_id ', 'left');
+        $this->multiRealm->join('guild_member gm', 'g.guildid = gm.guildid ', 'left');
         $this->multiRealm->where('guid', $playerid);
         $result = $this->multiRealm->get();
 

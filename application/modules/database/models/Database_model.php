@@ -13,6 +13,8 @@ class Database_model extends CI_Model
     {
         parent::__construct();
         $this->world = $this->load->database('world', true);
+		$this->world_tbc = $this->load->database('world_tbc', true);
+        
     }
 
     /**
@@ -21,23 +23,28 @@ class Database_model extends CI_Model
      *
      * @return array
      */
-    public function getItem(int $id, int $patch = 10): array // TODO: No need to cache this, consider removing cache here
+    public function getItem(int $id, int $realmid): array // TODO: No need to cache this, consider removing cache here
     {
-        $itemCache = $this->wowgeneral->getRedisCMS() ? $this->cache->redis->get('itemID_' . $id . '-P_' . $patch) : false;
+       // $itemCache = $this->wowgeneral->getRedisCMS() ? $this->cache->redis->get('itemID_' . $id . '-P_' . $patch) : false;
 
-        if ($itemCache) {
-            $item = $itemCache;
-        } else {
-            $subQ = $this->world->select("max(patch)", false)->where("t1.entry=t2.entry")->where("patch <=", $patch)->get_compiled_select("item_template t2");
-            $item = $this->world->select()->where('entry', $id)->where('patch=(' . $subQ . ')')->limit(1)->get('item_template t1')->row_array();
 
-            if ($item) {
-                if ($this->wowgeneral->getRedisCMS()) {
-                    // Cache for 30 day
-                    $this->cache->redis->save('itemID_' . $id . '-P_' . $patch, $item, 60 * 60 * 24 * 30);
-                }
-            }
-        }
+		$isExp = $this->wowrealm->isTbc($realmid);
+
+		
+		switch ($isExp) 
+		{
+			case 0:
+				$subQ = $this->world->select( false)->where("t1.entry=t2.entry")->get_compiled_select("item_template t2");
+				$item = $this->world->select()->where('entry', $id)->limit(1)->get('item_template t1')->row_array();
+			break;
+
+
+			case 1:
+				$subQ = $this->world_tbc->select( false)->where("t1.entry=t2.entry")->get_compiled_select("item_template t2");
+				$item = $this->world_tbc->select()->where('entry', $id)->limit(1)->get('item_template t1')->row_array();
+			break;
+		}
+
 
         return $item ?? [];
     }
@@ -48,41 +55,66 @@ class Database_model extends CI_Model
      *
      * @return string
      */
-    public function getItemName(int $id, int $patch = 10): string
+    public function getItemName(int $id, $realmid,int $patch = 10): string
     {
-        $itemNameCache = $this->wowgeneral->getRedisCMS() ? $this->cache->redis->get('itemNameID_' . $id . '-P_' . $patch) : false;
-
+        
+        $itemNameCache = $this->wowgeneral->getRedisCMS() ? $this->cache->redis->get('itemNameID_' . $id . '-P_10') : false;
+        $isExp = $this->wowrealm->isTbc($realmid);                
+        switch ($isExp) 
+        {
+            case 0:
+                $world_db = $this->world;
+            break;
+        
+            case 1:
+                $world_db = $this->world_tbc;
+            break;
+        }
+        
+        
         if ($itemNameCache) {
             $item_name = $itemNameCache;
         } else {
-            $subQ      = $this->world->select("max(patch)", false)->where("t1.entry=t2.entry")->where("patch <=", $patch)->get_compiled_select("item_template t2");
-            $item_name = $this->world->select('name')->where('entry', $id)->where('patch=(' . $subQ . ')')->limit(1)->get('item_template t1')->row('name');
+            $subQ      = $world_db->select("*", false)->where("t1.entry=t2.entry")->get_compiled_select("item_template t2");
+            $item_name = $world_db->select('name')->where('entry', $id)->limit(1)->get('item_template t1')->row('name');
 
             if ($item_name) {
                 if ($this->wowgeneral->getRedisCMS()) {
                     // Cache for 30 day
-                    $this->cache->redis->save('itemNameID_' . $id . '-P_' . $patch, $item_name, 60 * 60 * 24 * 30);
+                    $this->cache->redis->save('itemNameID_' . $id . '-P_10', $item_name, 60 * 60 * 24 * 30);
                 }
             }
         }
-
+		
         return $item_name ?? 'Unknown';
     }
 
-    public function getCreature(int $id, int $patch = 10, string $column = ''): array
+    public function getCreature(int $id, $realmid, string $column = ''): array
     {
-        $creatureCache = $this->wowgeneral->getRedisCMS() ? $this->cache->redis->get('creatureID_' . $id . '-P_' . $patch . ($column ? '-Col_' . str_replace(", ", "-", $column) : '')) : false;
+   
+        $isExp = $this->wowrealm->isTbc($realmid);                
+        switch ($isExp) 
+        {
+            case 0:
+                $world_db = $this->world;
+            break;
+        
+            case 1:
+                $world_db = $this->world_tbc;
+            break;
+        }
+        $creatureCache = $this->wowgeneral->getRedisCMS() ? $this->cache->redis->get('creatureID_' . $id . '-P_10' . ($column ? '-Col_' . str_replace(", ", "-", $column) : '')) : false;
 
         if ($creatureCache) {
             $creature = $creatureCache;
         } else {
-            $subQ     = $this->world->select("max(patch)", false)->where("t1.entry=t2.entry")->where("patch <=", patchToBuild($patch))->get_compiled_select("creature_template t2");
-            $creature = $this->world->select($column)->where('entry', $id)->where('patch=(' . $subQ . ')')->limit(1)->get('creature_template t1')->row_array();
+            $subQ     = $world_db->select("*", false)->where("t1.entry=t2.entry")->get_compiled_select("creature_template t2");
+            $creature = $world_db->select($column)->where('entry', $id)->limit(1)->get('creature_template t1')->row_array();
 
             if ($creature) {
                 if ($this->wowgeneral->getRedisCMS()) {
                     // Cache for 30 day
-                    $this->cache->redis->save('creatureID_' . $id . '-P_' . $patch . ($column ? '-Col_' . str_replace(", ", "-", $column) : ''), $creature, 60 * 60 * 24 * 30);
+                    $this->cache->redis->save('creatureID_' . $id . '-P_10' . ($column ? '-Col_' . str_replace(", ", "-", $column) : ''), $creature, 60 * 60 * 24 * 30);
                 }
             }
         }
@@ -90,15 +122,26 @@ class Database_model extends CI_Model
         return $creature ?? [];
     }
 
-    public function getCreatureName(int $id, int $patch = 10): string
+    public function getCreatureName(int $id, $realmid,int $patch = 10): string
     {
-        $creatureNameCache = $this->wowgeneral->getRedisCMS() ? $this->cache->redis->get('creatureNameID_' . $id . '-P_' . $patch) : false;
+        $isExp = $this->wowrealm->isTbc($realmid);                
+        switch ($isExp) 
+        {
+            case 0:
+                $world_db = $this->world;
+            break;
+        
+            case 1:
+                $world_db = $this->world_tbc;
+            break;
+        }
+        $creatureNameCache = $this->wowgeneral->getRedisCMS() ? $this->cache->redis->get('creatureNameID_' . $id . '-P_10') : false;
 
         if ($creatureNameCache) {
             $creature_name = $creatureNameCache;
         } else {
-            $subQ          = $this->world->select("max(patch)", false)->where("t1.entry=t2.entry")->where("patch <=", $patch)->get_compiled_select("creature_template t2");
-            $creature_name = $this->world->select('name')->where('entry', $id)->where('patch=(' . $subQ . ')')->limit(1)->get('creature_template t1')->row('name');
+            $subQ          = $world_db->select("", false)->where("t1.entry=t2.entry")->get_compiled_select("creature_template t2");
+            $creature_name = $world_db->select('name')->where('entry', $id)->limit(1)->get('creature_template t1')->row('name');
 
             if ($creature_name) {
                 if ($this->wowgeneral->getRedisCMS()) {
@@ -118,20 +161,38 @@ class Database_model extends CI_Model
      *
      * @return array
      */
-    public function getSpell(int $id, int $patch = 10, string $column = ''): array
+    public function getSpell(int $id, $realmid,int $patch = 10, string $column = ''): array
     {
-        $spellCache = $this->wowgeneral->getRedisCMS() ? $this->cache->redis->get('spellID_' . $id . '-P_' . $patch . ($column ? '-Col_' . str_replace(", ", "-", $column) : '')) : false;
+        
+        $isExp = $this->wowrealm->isTbc($realmid);                
+        switch ($isExp) 
+        {
+            case 0:
+                $world_db = $this->world;
+            break;
+        
+            case 1:
+                $world_db = $this->world_tbc;
+            break;
+        }
+        
+        $spellCache = $this->wowgeneral->getRedisCMS() ? $this->cache->redis->get('spellID_' . $id . '-P_10' . ($column ? '-Col_' . str_replace(", ", "-", $column) : '')) : false;
 
-        if ($spellCache) {
+        if ($spellCache) 
+        {
             $spell = $spellCache;
-        } else {
-            $subQ  = $this->world->select("max(build)", false)->where("t1.entry=t2.entry")->where("build <=", patchToBuild($patch))->get_compiled_select("spell_template t2");
-            $spell = $this->world->select($column)->where('entry', $id)->where('build=(' . $subQ . ')')->limit(1)->get('spell_template t1')->row_array();
-
-            if ($spell) {
-                if ($this->wowgeneral->getRedisCMS()) {
+        } 
+        else 
+        {
+            $subQ  = $world_db->select("*", false)->where("t1.entry=t2.Id")->get_compiled_select("spell_template t2");
+            $spell = $world_db->select($column)->where('Id', $id)->limit(1)->get('spell_template t1')->row_array();
+            
+            if ($spell) 
+            {
+                if ($this->wowgeneral->getRedisCMS()) 
+                {
                     // Cache for 30 day
-                    $this->cache->redis->save('spellID_' . $id . '-P_' . $patch . ($column ? '-Col_' . str_replace(", ", "-", $column) : ''), $spell, 60 * 60 * 24 * 30);
+                    $this->cache->redis->save('spellID_' . $id . '-P_10'  . ($column ? '-Col_' . str_replace(", ", "-", $column) : ''), $spell, 60 * 60 * 24 * 30);
                 }
             }
         }
@@ -145,21 +206,38 @@ class Database_model extends CI_Model
      *
      * @return array
      */
-    public function getAffectedSpellList(int $id, int $patch = 10): array
+
+	 // A.BLOMHE 22.08.24: FIX ALL WORLD AND'ENTRY' BS
+    public function getAffectedSpellList(int $id,$realmid, int $patch = 10): array
     {
-        $affectedSpellsCache = $this->wowgeneral->getRedisCMS() ? $this->cache->redis->get('affectedSpellList_' . $id . '-P_' . $patch) : false;
+        $isExp = $this->wowrealm->isTbc($realmid);                
+        switch ($isExp) 
+        {
+            case 0:
+                $world_db = $this->world;
+            break;
+        
+            case 1:
+                $world_db = $this->world_tbc;
+            break;
+        }
+        $affectedSpellsCache = $this->wowgeneral->getRedisCMS() ? $this->cache->redis->get('affectedSpellList_' . $id . '-P_10') : false;
 
         if ($affectedSpellsCache) {
             $affectedSpells = $affectedSpellsCache;
         } else {
-            $subQ           = $this->world->select("max(build)", false)->where("t1.entry=t3.entry")->where("build <=", patchToBuild($patch))->get_compiled_select("spell_template t3");
-            $subQ2          = $this->world->select("max(build)", false)->where("t2.entry=t4.entry")->where("build <=", patchToBuild($patch))->get_compiled_select("spell_template t4");
-            $affectedSpells = $this->world->select('t2.entry, t2.build, t2.spellIconId, t2.name, t2.nameSubtext')->where("t1.entry", $id)->where('t1.build=(' . $subQ . ')')->where('t2.build=(' . $subQ2 . ')')->where('(t1.spellFamilyName = t2.spellFamilyName)')->where('(t1.effectItemType1 & t2.spellFamilyFlags)')->order_by('t2.name, LENGTH(t2.nameSubText), t2.nameSubtext', 'ASC')->order_by('nameSubtext', 'ASC')->get('spell_template t1, spell_template t2')->result_array();
-
-            if ($affectedSpells) {
-                if ($this->wowgeneral->getRedisCMS()) {
+            $subQ           = $world_db->select("*", false)->where("t1.entry=t3.Id")->get_compiled_select("spell_template t3");
+            $subQ2          = $world_db->select("*", false)->where("t2.Id=t4.Id")->get_compiled_select("spell_template t4");
+         //   $affectedSpells = $world_db->select('t2.Id,  t2.SpellIconID, t2.SpellName, t2.nameSubtext')->where("t1.Id", $id)->where('(t1.SpellFamilyName = t2.SpellFamilyName)')->where('(t1.EffectItemType1 & t2.SpellFamilyFlags)')->order_by('t2.SpellName, LENGTH(t2.nameSubText), t2.nameSubtext', 'ASC')->order_by('nameSubtext', 'ASC')->get('spell_template t1, spell_template t2')->result_array();
+   $affectedSpells = $world_db->select('t2.Id,  t2.SpellIconID, t2.SpellName')->where("t1.Id", $id)->where('(t1.SpellFamilyName = t2.SpellFamilyName)')->where('(t1.EffectItemType1 & t2.SpellFamilyFlags)')->order_by('t2.SpellName', 'ASC')->get('spell_template t1, spell_template t2')->result_array();
+   
+   
+            if ($affectedSpells) 
+			{
+                if ($this->wowgeneral->getRedisCMS()) 
+				{
                     // Cache for 30 day
-                    $this->cache->redis->save('affectedSpellList_' . $id . '-P_' . $patch, $affectedSpells, 60 * 60 * 24 * 30);
+                    $this->cache->redis->save('affectedSpellList_' . $id . '-P_10', $affectedSpells, 60 * 60 * 24 * 30);
                 }
             }
         }
@@ -173,20 +251,31 @@ class Database_model extends CI_Model
      *
      * @return string
      */
-    public function getReqSpellName(int $id, int $patch = 10): string
+    public function getReqSpellName(int $id,int $realmid, int $patch = 10): string
     {
-        $spellNameCache = $this->wowgeneral->getRedisCMS() ? $this->cache->redis->get('spellNameID_' . $id . '-P_' . $patch) : false;
+        $isExp = $this->wowrealm->isTbc($realmid);                
+        switch ($isExp) 
+        {
+            case 0:
+                $world_db = $this->world;
+            break;
+        
+            case 1:
+                $world_db = $this->world_tbc;
+            break;
+        }
+        $spellNameCache = $this->wowgeneral->getRedisCMS() ? $this->cache->redis->get('spellNameID_' . $id . '-P_10') : false;
 
         if ($spellNameCache) {
             $spell = $spellNameCache;
         } else {
-            $subQ  = $this->world->select("max(build)", false)->where("t1.entry=t2.entry")->where("build <=", patchToBuild($patch))->get_compiled_select("spell_template t2");
-            $spell = $this->world->select()->where('entry', $id)->where('build=(' . $subQ . ')')->limit(1)->get('spell_template t1')->row('name');
+            $subQ  = $world_db->select("", false)->where("t1.entry=t2.entry")->get_compiled_select("spell_template t2");
+            $spell = $world_db->select()->where('entry', $id)->where('build=(' . $subQ . ')')->limit(1)->get('spell_template t1')->row('name');
 
             if ($spell) {
                 if ($this->wowgeneral->getRedisCMS()) {
                     // Cache for 30 day
-                    $this->cache->redis->save('spellNameID_' . $id . '-P_' . $patch, $spell, 60 * 60 * 24 * 30);
+                    $this->cache->redis->save('spellNameID_' . $id . '-P_10', $spell, 60 * 60 * 24 * 30);
                 }
             }
         }
@@ -201,20 +290,31 @@ class Database_model extends CI_Model
      *
      * @return string
      */
-    public function getSpellField(int $id, int $patch = 10, string $field = ''): string //This is barely used, it fetches values from other spells for tooltip
+    public function getSpellField(int $id, $realmid,int $patch = 10, string $field = ''): string //This is barely used, it fetches values from other spells for tooltip
     {
-        $spellFieldCache = $this->wowgeneral->getRedisCMS() ? $this->cache->redis->get('spellFieldID_' . $id . '-P_' . $patch . ($field ? '-Fld_' . $field : '')) : false;
-
+        $isExp = $this->wowrealm->isTbc($realmid);                
+        switch ($isExp) 
+        {
+            case 0:
+                $world_db = $this->world;
+            break;
+        
+            case 1:
+                $world_db = $this->world_tbc;
+            break;
+        }
+        
+        $spellFieldCache = $this->wowgeneral->getRedisCMS() ? $this->cache->redis->get('spellFieldID_' . $id . '-P_10' . ($field ? '-Fld_' . $field : '')) : false;
         if ($spellFieldCache) {
             $spell = $spellFieldCache;
         } else {
-            $subQ  = $this->world->select("max(build)", false)->where("t1.entry=t2.entry")->where("build <=", patchToBuild($patch))->get_compiled_select("spell_template t2");
-            $spell = $this->world->select($field)->where('entry', $id)->where('build=(' . $subQ . ')')->limit(1)->get('spell_template t1')->row($field);
+            $subQ  = $world_db->select("", false)->where("t1.entry=t2.entry")->get_compiled_select("spell_template t2");
+            $spell = $world_db->select($field)->where('entry', $id)->where('build=(' . $subQ . ')')->limit(1)->get('spell_template t1')->row($field);
 
             if ($spell) {
                 if ($this->wowgeneral->getRedisCMS()) {
                     // Cache for 30 day
-                    $this->cache->redis->save('spellFieldID_' . $id . '-P_' . $patch . ($field ? '-Fld_' . $field : ''), $spell, 60 * 60 * 24 * 30);
+                    $this->cache->redis->save('spellFieldID_' . $id . '-P_10'  . ($field ? '-Fld_' . $field : ''), $spell, 60 * 60 * 24 * 30);
                 }
             }
         }
@@ -228,11 +328,11 @@ class Database_model extends CI_Model
      *
      * @return string
      */
-    public function getSpellDetails(int $id, int $patch = 10): string //No need to cache
+    public function getSpellDetails(int $id,$realmid, int $patch = 10): string //No need to cache
     {
         $signs = ['+', '-', '/', '*', '%', '^'];
 
-        $spell = $this->getSpell($id, $patch);
+        $spell = $this->getSpell($id,$realmid, "10");
         $final = [];
 
         if (empty($spell)) {
@@ -262,22 +362,22 @@ class Database_model extends CI_Model
                     $entry = (($pos = strpos($matches[1][$key], ";")) > 0) ? substr($matches[1][$key], $pos + 1) : '';
 
                     $res = isInt($entry)
-                        ? $this->getSpellField($entry, $patch, 'effectRadiusIndex' . $index)
-                        : $spell['effectRadiusIndex' . $index];
+                        ? $this->getSpellField($entry,$realmid, $patch, 'EffectRadiusIndex' . $index)
+                        : $spell['EffectRadiusIndex' . $index];
 
                     $final[$var] = $res;
                 }
             } elseif ((strtolower($matches[1][$key][0]) ?? '') === 'b') {
                 $index = getIndex($var);
                 if ($index <= 3) {
-                    $final[$var] = $spell['effectPointsPerComboPoint' . $index];
+                    $final[$var] = $spell['EffectPointsPerComboPoint' . $index];
                 }
             } elseif ((strtolower($matches[1][$key][0]) ?? '') === 'd') {
                 $entry = (($pos = strpos($matches[1][$key], ";")) > 0) ? substr($matches[1][$key], $pos + 1) : '';
 
                 $res = isInt($entry)
-                    ? $this->config->item('duration')[$this->getSpellField($entry, $patch, 'durationIndex')]
-                    : $this->config->item('duration')[$spell['durationIndex']];
+                    ? $this->config->item('duration')[$this->getSpellField($entry,$realmid, $patch, 'DurationIndex')]
+                    : $this->config->item('duration')[$spell['DurationIndex']];
 
                 if ($res < 0) {
                     $final[$var] = 'until cancelled';
@@ -288,7 +388,7 @@ class Database_model extends CI_Model
                 $index = getIndex($var);
                 $index = $index == 0 ? 1 : $index;
                 if ($index <= 3) {
-                    $final[$var] = $spell['effectMultipleValue' . $index];
+                    $final[$var] = $spell['EffectMultipleValue' . $index];
                 }
             } elseif ((strtolower($matches[1][$key][0]) ?? '') === 'f') {
                 $index = isInt($matches[1][$key][1] ?? '') ? $matches[1][$key][1] : getIndex($var);
@@ -302,7 +402,7 @@ class Database_model extends CI_Model
                     $entry = (($pos = strpos($matches[1][$key], ";")) > 0) ? substr($matches[1][$key], $pos + 1) : '';
 
                     $res = isInt($entry)
-                        ? $this->getSpellField($entry, $patch, 'dmgMultiplier' . $index)
+                        ? $this->getSpellField($entry,$realmid, $patch, 'dmgMultiplier' . $index)
                         : $spell['dmgMultiplier' . $index];
 
                     if (in_array($op, $signs)) {
@@ -331,10 +431,10 @@ class Database_model extends CI_Model
                     $entry = (($pos = strpos($matches[1][$key], ";")) > 0) ? substr($matches[1][$key], $pos + 1) : '';
 
                     $res = isInt($entry)
-                        ? $this->getSpell($entry, $patch, 'effectBasePoints' . $index . ', effectDieSides' . $index)
-                        : $spell['effectBasePoints' . $index];
+                        ? $this->getSpell($entry, $realmid,$patch, 'EffectBasePoints' . $index . ', EffectDieSides' . $index)
+                        : $spell['EffectBasePoints' . $index];
 
-                    $add = ($matches[1][$key][0]) === 'm' ? 1 : $res['effectDieSides' . $index] ?? $spell['effectDieSides' . $index];
+                    $add = ($matches[1][$key][0]) === 'm' ? 1 : $res['EffectDieSides' . $index] ?? $spell['EffectDieSides' . $index];
                     $res = $res + $add;
 
                     if (in_array($op, $signs)) {
@@ -347,7 +447,7 @@ class Database_model extends CI_Model
                 $entry = (($pos = strpos($matches[1][$key], ";")) > 0) ? substr($matches[1][$key], $pos + 1) : '';
 
                 $res = isInt($entry)
-                    ? $this->getSpellField($entry, $patch, 'procCharges')
+                    ? $this->getSpellField($entry,$realmid, $patch, 'procCharges')
                     : $spell['procCharges'];
 
                 $final[$var] = $res;
@@ -362,19 +462,19 @@ class Database_model extends CI_Model
                 $entry = (($pos = strpos($matches[1][$key], ";")) > 0) ? substr($matches[1][$key], $pos + 1) : '';
 
                 if (isInt($entry)) {
-                    $n_spell = $this->getSpell($entry, $patch, 'durationIndex, effectDieSides' . $index . ', effectBasePoints' . $index . ', effectApplyAuraName' . $index . ',effectAmplitude' . $index);
+                    $n_spell = $this->getSpell($entry,$realmid, $patch, 'DurationIndex, EffectDieSides' . $index . ', EffectBasePoints' . $index . ', EffectApplyAuraName' . $index . ',EffectAmplitude' . $index);
 
-                    $period   = $n_spell['effectAmplitude' . $index];
-                    $duration = $this->config->item('duration')[$n_spell['durationIndex']];
-                    $base     = $n_spell['effectBasePoints' . $index];
-                    $add      = $n_spell['effectDieSides' . $index];
-                    $aura     = $n_spell['effectApplyAuraName' . $index];
+                    $period   = $n_spell['EffectAmplitude' . $index];
+                    $duration = $this->config->item('duration')[$n_spell['DurationIndex']];
+                    $base     = $n_spell['EffectBasePoints' . $index];
+                    $add      = $n_spell['EffectDieSides' . $index];
+                    $aura     = $n_spell['EffectApplyAuraName' . $index];
                 } else {
-                    $period   = $spell['effectAmplitude' . $index];
-                    $duration = $this->config->item('duration')[$spell['durationIndex']];
-                    $base     = $spell['effectBasePoints' . $index];
-                    $add      = $spell['effectDieSides' . $index];
-                    $aura     = $spell['effectApplyAuraName' . $index];
+                    $period   = $spell['EffectAmplitude' . $index];
+                    $duration = $this->config->item('duration')[$spell['EurationIndex']];
+                    $base     = $spell['EffectBasePoints' . $index];
+                    $add      = $spell['EffectDieSides' . $index];
+                    $aura     = $spell['EffectApplyAuraName' . $index];
                 }
 
                 $min = $add ? $base + 1 : $base;
@@ -409,8 +509,8 @@ class Database_model extends CI_Model
                     $entry = (($pos = strpos($matches[1][$key], ";")) > 0) ? substr($matches[1][$key], $pos + 1) : '';
 
                     $res = isInt($entry)
-                        ? $this->getSpellField($entry, $patch, 'effectMiscValue' . $index)
-                        : $spell['effectMiscValue' . $index];
+                        ? $this->getSpellField($entry, $realmid,$patch, 'EffectMiscValue' . $index)
+                        : $spell['EffectMiscValue' . $index];
 
                     $final[$var] = $res;
                 }
@@ -421,8 +521,8 @@ class Database_model extends CI_Model
                     $entry = (($pos = strpos($matches[1][$key], ";")) > 0) ? substr($matches[1][$key], $pos + 1) : '';
 
                     $res = isInt($entry)
-                        ? $this->getSpellField($entry, $patch, 'effectRadiusIndex' . $index)
-                        : $spell['effectRadiusIndex' . $index];
+                        ? $this->getSpellField($entry, $realmid,$patch, 'EffectRadiusIndex' . $index)
+                        : $spell['EffectRadiusIndex' . $index];
 
                     $final[$var] = $res;
                 }
@@ -436,15 +536,16 @@ class Database_model extends CI_Model
                         $act = (int)getBetweenStr($matches[1][$key], '[', ']') ?? 1;
                     }
                     $entry = (($pos = strpos($matches[1][$key], ";")) > 0) ? substr($matches[1][$key], $pos + 1) : '';
-
+                    $base = "hey";
+                    
                     if (isInt($entry)) {
-                        $n_spell = $this->getSpell($entry, $patch, 'effectDieSides' . $index . ', effectBasePoints' . $index);
+                        $n_spell = $this->getSpell($entry, $realmid,$patch, 'EffectDieSides' . $index . ', EffectBasePoints' . $index);
 
-                        $base = $n_spell['effectBasePoints' . $index];
-                        $add  = $n_spell['effectDieSides' . $index];
+                        $base = $n_spell['EffectBasePoints' . $index];
+                        $add  = $n_spell['EffectDieSides' . $index];
                     } else {
-                        $base = $spell['effectBasePoints' . $index];
-                        $add  = $spell['effectDieSides' . $index];
+                        $base = $spell['EffectBasePoints' . $index];
+                        $add  = $spell['EffectDieSides' . $index];
                     }
 
                     $min = $add ? $base + 1 : $base;
@@ -468,8 +569,8 @@ class Database_model extends CI_Model
                     $entry = (($pos = strpos($matches[1][$key], ";")) > 0) ? substr($matches[1][$key], $pos + 1) : '';
 
                     $res = isInt($entry)
-                        ? $this->getSpellField($entry, $patch, 'effectAmplitude' . $index)
-                        : $spell['effectAmplitude' . $index];
+                        ? $this->getSpellField($entry,$realmid, $patch, 'EffectAmplitude' . $index)
+                        : $spell['EffectAmplitude' . $index];
 
                     $final[$var] = $res / 1000;
                 }
@@ -480,7 +581,7 @@ class Database_model extends CI_Model
                     $entry = (($pos = strpos($matches[1][$key], ";")) > 0) ? substr($matches[1][$key], $pos + 1) : '';
 
                     $res = isInt($entry)
-                        ? $this->getSpellField($entry, $patch, 'stackAmount')
+                        ? $this->getSpellField($entry,$realmid, $patch, 'stackAmount')
                         : $spell['stackAmount'];
 
                     $final[$var] = $res;
@@ -490,7 +591,7 @@ class Database_model extends CI_Model
             } elseif ((strtolower($matches[1][$key][0]) ?? '') === 'x') {
                 $index = getIndex($var);
                 if ($index <= 3) {
-                    $final[$var] = $spell['effectChainTarget' . $index];
+                    $final[$var] = $spell['EffectChainTarget' . $index];
                 }
             } elseif ((strtolower($matches[1][$key][0]) ?? '') === 'z') {
                 $final[$var] = htmlspecialchars('<Inn>');
@@ -504,20 +605,30 @@ class Database_model extends CI_Model
         return $desc;
     }
 
-    public function getGO(int $id, int $patch = 10, string $column = ''): array
+    public function getGO(int $id,$realmid, int $patch = 10, string $column = ''): array
     {
-        $goCache = $this->wowgeneral->getRedisCMS() ? $this->cache->redis->get('gameObjectID_' . $id . '-P_' . $patch . ($column ? '-Col_' . str_replace(", ", "-", $column) : '')) : false;
-
+        $goCache = $this->wowgeneral->getRedisCMS() ? $this->cache->redis->get('gameObjectID_' . $id . '-P_10'  . ($column ? '-Col_' . str_replace(", ", "-", $column) : '')) : false;
+        $isExp = $this->wowrealm->isTbc($realmid);                
+        switch ($isExp) 
+        {
+            case 0:
+                $world_db = $this->world;
+            break;
+        
+            case 1:
+                $world_db = $this->world_tbc;
+            break;
+        }
         if ($goCache) {
             $go = $goCache;
         } else {
-            $subQ = $this->world->select("max(patch)", false)->where("t1.entry=t2.entry")->where("patch <=", patchToBuild($patch))->get_compiled_select("gameobject_template t2");
-            $go   = $this->world->select($column)->where('entry', $id)->where('patch=(' . $subQ . ')')->limit(1)->get('gameobject_template t1')->row_array();
+            $subQ = $world_db->select("", false)->where("t1.entry=t2.entry")->get_compiled_select("gameobject_template t2");
+            $go   = $world_db->select($column)->where('entry', $id)->limit(1)->get('gameobject_template t1')->row_array();
 
             if ($go) {
                 if ($this->wowgeneral->getRedisCMS()) {
                     // Cache for 30 day
-                    $this->cache->redis->save('gameObjectID_' . $id . '-P_' . $patch . ($column ? '-Col_' . str_replace(", ", "-", $column) : ''), $go, 60 * 60 * 24 * 30);
+                    $this->cache->redis->save('gameObjectID_' . $id . '-P_10'  . ($column ? '-Col_' . str_replace(", ", "-", $column) : ''), $go, 60 * 60 * 24 * 30);
                 }
             }
         }
@@ -525,20 +636,30 @@ class Database_model extends CI_Model
         return $go ?? [];
     }
 
-    public function getGOName(int $id, int $patch = 10): string
+    public function getGOName(int $id, $realmid,int $patch = 10): string
     {
         $goNameCache = $this->wowgeneral->getRedisCMS() ? $this->cache->redis->get('gameObjectNameID_' . $id . '-P_' . $patch) : false;
-
+        $isExp = $this->wowrealm->isTbc($realmid);                
+        switch ($isExp) 
+        {
+            case 0:
+                $world_db = $this->world;
+            break;
+        
+            case 1:
+                $world_db = $this->world_tbc;
+            break;
+        }
         if ($goNameCache) {
             $go_name = $goNameCache;
         } else {
-            $subQ    = $this->world->select("max(patch)", false)->where("t1.entry=t2.entry")->where("patch <=", $patch)->get_compiled_select("gameobject_template t2");
-            $go_name = $this->world->select('name')->where('entry', $id)->where('patch=(' . $subQ . ')')->limit(1)->get('gameobject_template t1')->row('name');
+            $subQ    = $world_db->select("*", false)->where("t1.entry=t2.entry")->get_compiled_select("gameobject_template t2");
+            $go_name = $world_db->select('name')->where('entry', $id)->limit(1)->get('gameobject_template t1')->row('name');
 
             if ($go_name) {
                 if ($this->wowgeneral->getRedisCMS()) {
                     // Cache for 30 day
-                    $this->cache->redis->save('gameObjectNameID_' . $id . '-P_' . $patch, $go_name, 60 * 60 * 24 * 30);
+                    $this->cache->redis->save('gameObjectNameID_' . $id . '-P_10', $go_name, 60 * 60 * 24 * 30);
                 }
             }
         }
@@ -546,20 +667,31 @@ class Database_model extends CI_Model
         return $go_name ?? ('Unknown - ' . $id);
     }
 
-    public function getQuest(int $id, int $patch = 10, string $column = ''): array
+    public function getQuest(int $id,$realmid, int $patch = 10, string $column = ''): array
     {
-        $questCache = $this->wowgeneral->getRedisCMS() ? $this->cache->redis->get('questID_' . $id . '-P_' . $patch . ($column ? '-Col_' . str_replace(", ", "-", $column) : '')) : false;
+        $isExp = $this->wowrealm->isTbc($realmid);                
+        switch ($isExp) 
+        {
+            case 0:
+                $world_db = $this->world;
+            break;
+        
+            case 1:
+                $world_db = $this->world_tbc;
+            break;
+        }
+        $questCache = $this->wowgeneral->getRedisCMS() ? $this->cache->redis->get('questID_' . $id . '-P_10'  . ($column ? '-Col_' . str_replace(", ", "-", $column) : '')) : false;
 
         if ($questCache) {
             $quest = $questCache;
         } else {
-            $subQ  = $this->world->select("max(patch)", false)->where("t1.entry=t2.entry")->where("patch <=", patchToBuild($patch))->get_compiled_select("quest_template t2");
-            $quest = $this->world->select($column)->where('entry', $id)->where('patch=(' . $subQ . ')')->limit(1)->get('quest_template t1')->row_array();
+            $subQ  = $world_db->select("*", false)->where("t1.entry=t2.entry")->get_compiled_select("quest_template t2");
+            $quest = $world_db->select($column)->where('entry', $id)->limit(1)->get('quest_template t1')->row_array();
 
             if ($quest) {
                 if ($this->wowgeneral->getRedisCMS()) {
                     // Cache for 30 day
-                    $this->cache->redis->save('questID_' . $id . '-P_' . $patch . ($column ? '-Col_' . str_replace(", ", "-", $column) : ''), $quest, 60 * 60 * 24 * 30);
+                    $this->cache->redis->save('questID_' . $id . '-P_10' . ($column ? '-Col_' . str_replace(", ", "-", $column) : ''), $quest, 60 * 60 * 24 * 30);
                 }
             }
         }
@@ -567,20 +699,31 @@ class Database_model extends CI_Model
         return $quest ?? [];
     }
 
-    public function getQuestTitle(int $id, int $patch = 10): string
+    public function getQuestTitle(int $id,$realmid, int $patch = 10): string
     {
-        $questTitleCache = $this->wowgeneral->getRedisCMS() ? $this->cache->redis->get('questNameID_' . $id . '-P_' . $patch) : false;
+        $isExp = $this->wowrealm->isTbc($realmid);                
+        switch ($isExp) 
+        {
+            case 0:
+                $world_db = $this->world;
+            break;
+        
+            case 1:
+                $world_db = $this->world_tbc;
+            break;
+        }
+        $questTitleCache = $this->wowgeneral->getRedisCMS() ? $this->cache->redis->get('questNameID_' . $id . '-P_10') : false;
 
         if ($questTitleCache) {
             $quest_name = $questTitleCache;
         } else {
-            $subQ       = $this->world->select("max(patch)", false)->where("t1.entry=t2.entry")->where("patch <=", $patch)->get_compiled_select("quest_template t2");
-            $quest_name = $this->world->select('title')->where('entry', $id)->where('patch=(' . $subQ . ')')->limit(1)->get('quest_template t1')->row('title');
+            $subQ       = $world_db->select("", false)->where("t1.entry=t2.entry")->get_compiled_select("quest_template t2");
+            $quest_name = $world_db->select('title')->where('entry', $id)->limit(1)->get('quest_template t1')->row('title');
 
             if ($quest_name) {
                 if ($this->wowgeneral->getRedisCMS()) {
                     // Cache for 30 day
-                    $this->cache->redis->save('questNameID_' . $id . '-P_' . $patch, $quest_name, 60 * 60 * 24 * 30);
+                    $this->cache->redis->save('questNameID_' . $id . '-P_10', $quest_name, 60 * 60 * 24 * 30);
                 }
             }
         }
@@ -594,29 +737,40 @@ class Database_model extends CI_Model
      *
      * @return string
      */
-    public function getIconName(int $id, int $patch = 10): string
+    public function getIconName(int $id, $realmid ,int $patch = 10): string
     {
-        $iconCache = $this->wowgeneral->getRedisCMS() ? $this->cache->redis->get('iconID' . $id . '-P_' . $patch) : false;
+        $isExp = $this->wowrealm->isTbc($realmid);                
+        switch ($isExp) 
+        {
+            case 0:
+                $world_db = $this->world;
+            break;
+        
+            case 1:
+                $world_db = $this->world_tbc;
+            break;
+        }
+        
+        $iconCache = $this->wowgeneral->getRedisCMS() ? $this->cache->redis->get('iconID' . $id . '-P_10') : false;
 
         if ($iconCache) {
             $icon = $iconCache;
         } else {
-            $subQ = $this->world->select("max(patch)", false)->where("t1.entry=t2.entry")->where("patch <=", $patch)->get_compiled_select("item_template t2");
+            $subQ = $world_db->select("*", false)->where("t1.entry=t2.entry")->get_compiled_select("item_template t2");
 
-            $this->world->select('i.icon');
-            $this->world->from('item_display_info i');
-            $this->world->join('item_template t1', 'i.ID = t1.display_id', 'left');
-            $this->world->where('t1.entry', $id);
-            $this->world->where('patch=(' . $subQ . ')');
-            $this->world->limit(1);
-            $icon = $this->world->get()->row('icon');
+            $world_db->select('i.icon');
+            $world_db->from('item_display_info i');
+            $world_db->join('item_template t1', 'i.ID = t1.displayid', 'left');
+            $world_db->where('t1.entry', $id);
+            $world_db->limit(1);
+            $icon = $world_db->get()->row('icon');
 
             if (empty($icon)) {
-                $icon = 'INV_Misc_QuestionMark';
+                $icon = 'INV_Misc_QuestionMarkz';
             }
             if ($this->wowgeneral->getRedisCMS()) {
                 // Cache for 30 day
-                $this->cache->redis->save('iconID' . $id . '-P_' . $patch, $icon, 60 * 60 * 24 * 30);
+                $this->cache->redis->save('iconID' . $id . '-P_10' , $icon, 60 * 60 * 24 * 30);
             }
         }
 
@@ -628,15 +782,26 @@ class Database_model extends CI_Model
      *
      * @return string
      */
-    public function getFactionName(int $id): string
+    public function getFactionName(int $id,$realmid): string
     {
+        $isExp = $this->wowrealm->isTbc($realmid);                
+        switch ($isExp) 
+        {
+            case 0:
+                $world_db = $this->world;
+            break;
+        
+            case 1:
+                $world_db = $this->world_tbc;
+            break;
+        }
         $factionCache = $this->wowgeneral->getRedisCMS() ? $this->cache->redis->get('factionID_' . $id) : false;
 
         if ($factionCache) {
             $faction = $factionCache;
         } else {
-            $subQ    = $this->world->select('MAX(build)')->from('faction')->where('id', $id)->get_compiled_select();
-            $faction = $this->world->select('name')->where('id', $id)->where('build =(' . $subQ . ')')->limit(1)->get('faction')->row('name');
+            $subQ    = $world_db->select('*')->from('faction')->where('id', $id)->get_compiled_select();
+            $faction = $world_db->select('name')->where('id', $id)->limit(1)->get('faction')->row('name');
 
             if (empty($faction)) {
                 $faction = 'Unknown';
@@ -651,25 +816,43 @@ class Database_model extends CI_Model
         return $faction;
     }
 
-    public function getZoneName(int $id, int $map, string $table = 'creature'): string
+    public function getZoneName(int $id,int $map,$realmid, string $table = 'creature'): string
     {
+        $isExp = $this->wowrealm->isTbc($realmid);                
+        switch ($isExp) 
+        {
+            case 0:
+                $world_db = $this->world;
+            break;
+        
+            case 1:
+                $world_db = $this->world_tbc;
+            break;
+        }
+        
         $zone     = "";
         $loc_list = [];
-        if ($map < 0 || $id < 0) {
-            return 'Unknown';
-        } elseif ($map < 2) //Azeroth, Kalimdor
+        if ($map < 0 || $id < 0) 
+        {    
+            return 'Unknown (No Spawn Found)';
+        } 
+        else if ($map < 2) //Azeroth, Kalimdor
         {
-            $coords = $this->world->select('position_x, position_y')->where('id', $id)->limit(1)->get($table)->row_array();
-            if ($coords) {
+            $coords = $world_db->select('position_x, position_y')->where('id', $id)->limit(1)->get($table)->row_array();
+            if ($coords) 
+            {
                 (int)$pos_x = $coords['position_x'];
                 (int)$pos_y = $coords['position_y'];
 
-                foreach ($this->config->item('map_area') as $key => $area) {
+                foreach ($this->config->item('map_area') as $key => $area) 
+                {
                     // MapID, Name, X_Min, Y_Min, X_Max, Y_Max
-                    if ($area[0] === $map && $area[2] < $pos_x && $area[4] > $pos_x && $area[3] < $pos_y && $area[5] > $pos_y) {
+                    if ($area[0] === $map && $area[2] < $pos_x && $area[4] > $pos_x && $area[3] < $pos_y && $area[5] > $pos_y) 
+                    {
                         $filename = 'application/modules/database/assets/images/mbound/' . $key . '.png';
 
-                        if (! file_exists($filename)) {
+                        if (! file_exists($filename)) 
+                        {
                             continue;
                         }
 
@@ -679,11 +862,13 @@ class Database_model extends CI_Model
                         $x = 100 - round(($pos_y - $area[3]) / (($area[5] - $area[3]) / 100), 1);
                         $y = 100 - round(($pos_x - $area[2]) / (($area[4] - $area[2]) / 100), 1);
 
-                        if (imagecolorat($image, round($x * 9.99), round($y * 9.99)) !== 0) {
+                        if (imagecolorat($image, round($x * 9.99), round($y * 9.99)) !== 0) 
+                        {
                             continue;
                         }
 
-                        if ($x && $y) {
+                        if ($x && $y) 
+                        {
                             $area['x'] = $x;
                             $area['y'] = $y;
                         }
@@ -708,7 +893,7 @@ class Database_model extends CI_Model
                 }
             }
         } else {
-            $area = $this->world->select('name')->where('map_id >', 2)->where('map_id', $map)->limit(1)->get('area_template')->row('name');
+            $area = $world_db->select('name')->where('map_id >', 2)->where('map_id', $map)->limit(1)->get('area_template')->row('name');
 
             if ($area) {
                 $zone = $area;
@@ -718,130 +903,44 @@ class Database_model extends CI_Model
         return ! empty($zone) ? rtrim($zone, ', ') : 'Unknown';
     }
 
-    /**
-     * @param  int  $id
-     *
-     * @return int
-     */
-    public function getAddedPatch(int $id): int
+
+
+ 
+
+    public function getItemRelatedList(int $id,int $realmid ,int $patch = 10, int $limit = 1000): array
     {
-        $addedPatchCache = $this->wowgeneral->getRedisCMS() ? $this->cache->redis->get('itemID_' . $id . '-AddedPatch') : false;
-
-        if (! empty($addedPatchCache) || strlen($addedPatchCache) > 0) {
-            $patch = $addedPatchCache;
-        } else {
-            $patch = $this->world->select('min(patch)')->where('entry', $id)->limit(1)->get('item_template')->row('min(patch)');
-
-            if (! empty($patch) || strlen($patch) > 0) {
-                if ($this->wowgeneral->getRedisCMS()) {
-                    // Cache for 30 day
-                    $this->cache->redis->save('itemID_' . $id . '-AddedPatch', $patch, 60 * 60 * 24 * 30);
-                }
-            }
+        $isExp = $this->wowrealm->isTbc($realmid);                
+        switch ($isExp) 
+        {
+            case 0:
+                $world_db = $this->world;
+            break;
+        
+            case 1:
+                $world_db = $this->world_tbc;
+            break;
         }
-
-        return $patch ?? 0;
-    }
-
-    /**
-     * @param  int  $id
-     *
-     * @return array
-     */
-    public function getPatchList(int $id): array
-    {
-        $patchListCache = $this->wowgeneral->getRedisCMS() ? $this->cache->redis->get('itemID_' . $id . '-PatchList') : false;
-
-        if ($patchListCache) {
-            $patchList = $patchListCache;
-        } else {
-            $patchList = $this->world->select('patch')->where('entry', $id)->limit(5)->get('item_template')->result_array();
-
-            if ($patchList) {
-                if ($this->wowgeneral->getRedisCMS()) {
-                    // Cache for 30 day
-                    $this->cache->redis->save('itemID_' . $id . '-PatchList', $patchList, 60 * 60 * 24 * 30);
-                }
-            }
-        }
-
-        return $patchList ?? [];
-    }
-
-    /**
-     * @param  int  $id
-     *
-     * @return int
-     */
-    public function getAddedBuild(int $id): int
-    {
-        $addedBuildCache = $this->wowgeneral->getRedisCMS() ? $this->cache->redis->get('spellID_' . $id . '-AddedBuild') : false;
-
-        if (! empty($addedBuildCache) || strlen($addedBuildCache) > 0) {
-            $build = $addedBuildCache;
-        } else {
-            $build = $this->world->select('min(build)')->where('entry', $id)->limit(1)->get('spell_template')->row('min(build)');
-
-            if (! empty($build) || strlen($build) > 0) {
-                if ($this->wowgeneral->getRedisCMS()) {
-                    // Cache for 30 day
-                    $this->cache->redis->save('spellID_' . $id . '-AddedBuild', $build, 60 * 60 * 24 * 30);
-                }
-            }
-        }
-
-        return $build ?? 0;
-    }
-
-    /**
-     * @param  int  $id
-     *
-     * @return array
-     */
-    public function getBuildList(int $id): array
-    {
-        $buildListCache = $this->wowgeneral->getRedisCMS() ? $this->cache->redis->get('spellID_' . $id . '-BuildList') : false;
-
-        if ($buildListCache) {
-            $buildList = $buildListCache;
-        } else {
-            $buildList = $this->world->select('build')->where('entry', $id)->limit(5)->get('spell_template')->result_array();
-
-            if ($buildList) {
-                if ($this->wowgeneral->getRedisCMS()) {
-                    // Cache for 30 day
-                    $this->cache->redis->save('spellID_' . $id . '-BuildList', $buildList, 60 * 60 * 24 * 30);
-                }
-            }
-        }
-
-        return $buildList ?? [];
-    }
-
-    public function getItemRelatedList(int $id, int $patch = 10, int $limit = 1000): array
-    {
         $itemList      = [];
-        $itemListCache = $this->wowgeneral->getRedisCMS() ? $this->cache->redis->get('itemID_' . $id . '-ItemRelated' . '-P_' . $patch) : false;
+        $itemListCache = $this->wowgeneral->getRedisCMS() ? $this->cache->redis->get('itemID_' . $id . '-ItemRelated' . '-P_10' ) : false;
 
         if ($itemListCache) {
             $itemList = $itemListCache;
         } else {
-            $subQ   = $this->world->select("max(patch)", false)->where("it.entry=it2.entry")->where("patch <=", $patch)->get_compiled_select("item_template it2");
+            $subQ   = $world_db->select("*", false)->where("it.entry=it2.entry")->get_compiled_select("item_template it2");
             $tables = ['contained' => 'item_loot_template', 'disenchanted' => 'disenchant_loot_template'];
-            $cols   = ['contained' => 'entry', 'disenchanted' => 'disenchant_id'];
+            $cols   = ['contained' => 'entry', 'disenchanted' => 'DisenchantID'];
 
             foreach ($tables as $key => $tbl) {
-                $refData = $this->getDropTable($id, $tbl, $patch);
+                $refData = $this->getDropTable($id, $tbl, $realmid);
                 if ($refData) {
                     $items = array_keys($refData);
 
-                    $this->world->select('entry, name, class, subclass, quality, item_level, required_level, disenchant_id');
-                    $this->world->from('item_template it');
-                    $this->world->where('patch=(' . $subQ . ')');
-                    $this->world->where_in($cols[$key], $items);
-                    $this->world->group_by('it.entry');
-                    $this->world->limit($limit); //TODO: Call by API with pagination, eliminate this.
-                    $res = $this->world->get()->result_array();
+                    $world_db->select('entry, name, class, subclass, Quality, ItemLevel, RequiredLevel, DisenchantID');
+                    $world_db->from('item_template it');
+                    $world_db->where_in($cols[$key], $items);
+                    $world_db->group_by('it.entry');
+                    $world_db->limit($limit); //TODO: Call by API with pagination, eliminate this.
+                    $res = $world_db->get()->result_array();
 
                     if ($res) {
                         // Merge the data
@@ -866,36 +965,55 @@ class Database_model extends CI_Model
         return $itemList;
     }
 
-    public function getCreatureRelatedList(int $id, int $patch = 10, int $limit = 1000): array
+    // A. Blohmé, 24.08.24
+    // Get spawn location and stuff for creature (it doesnt work inside item db yet!)
+    public function getCreatureRelatedList(int $id, $realmid,int $patch = 10, int $limit = 1000): array
     {
+        $isExp = $this->wowrealm->isTbc($realmid);                
+        switch ($isExp) 
+        {
+            case 0:
+                $world_db = $this->world;
+            break;
+        
+            case 1:
+                $world_db = $this->world_tbc;
+            break;
+        }
         $dropList      = [];
-        $dropListCache = $this->wowgeneral->getRedisCMS() ? $this->cache->redis->get('itemID_' . $id . '-CreatureRelated' . '-P_' . $patch) : false;
-
-        if ($dropListCache) {
+        $dropListCache = $this->wowgeneral->getRedisCMS() ? $this->cache->redis->get('itemID_' . $id . '-CreatureRelated' . '-P_10') : false;
+        //echo "checking drop cdhance...";
+        if ($dropListCache) 
+        {
             $dropList = $dropListCache;
-        } else {
-            $subQ   = $this->world->select("max(patch)", false)->where("ct.entry=ct2.entry")->where("patch <=", $patch)->get_compiled_select("creature_template ct2");
+        } 
+        else 
+        {
+            $subQ   = $world_db->select("*", false)->where("ct.entry=ct2.entry")->get_compiled_select("creature_template ct2");
             $tables = ['drop' => 'creature_loot_template', 'pocket' => 'pickpocketing_loot_template', 'skin' => 'skinning_loot_template'];
-
-            foreach ($tables as $key => $tbl) {
-                $refData = $this->getDropTable($id, $tbl, $patch);
-                if ($refData) {
+            //echo "WE HAVE SUBQ1111!";
+            foreach ($tables as $key => $tbl) 
+            {
+                //echo "going through tables...";
+                $refData = $this->getDropTable($id, $tbl, $realmid);
+                if ($refData) 
+                {
+                    //echo "we got ref data!!!";
                     $creatures = array_keys($refData);
-
-                    $subQ2 = $this->world->select("map")->where("id=ct.entry")->limit(1)->get_compiled_select("creature");
-
-                    $this->world->select('entry, name, rank, level_min, level_max, (' . $subQ2 . ') as map');
-                    $this->world->from('creature_template ct');
-                    $this->world->where('ct.patch=(' . $subQ . ')');
-                    $this->world->where_in('entry', $creatures);
-                    $this->world->group_by('ct.entry');
-                    $this->world->limit($limit); //TODO: Call by API with pagination, eliminate this.
-                    $res = $this->world->get()->result_array();
-
-                    if ($res) {
+                    $subQ2 = $world_db->select("map")->where("id=ct.entry")->limit(1)->get_compiled_select("creature");
+                    $world_db->select('Entry, Name, Rank, MinLevel, MaxLevel, (' . $subQ2 . ') as map');
+                    $world_db->from('creature_template ct');
+                    $world_db->where_in('Entry', $creatures);
+                    $world_db->group_by('ct.Entry');
+                    $world_db->limit($limit); //TODO: Call by API with pagination, eliminate this.
+                    $res = $world_db->get()->result_array();
+                    if ($res) 
+                    {
                         // Merge the data
-                        foreach ($res as $k => $v) {
-                            foreach ($refData[$v['entry']] as $rk => $rv) {
+                        foreach ($res as $k => $v) 
+                        {
+                            foreach ($refData[$v['Entry']] as $rk => $rv) 
+                            {
                                 $res[$k][$rk] = $rv;
                             }
                         }
@@ -911,31 +1029,40 @@ class Database_model extends CI_Model
                 $this->cache->redis->save('itemID_' . $id . '-CreatureRelated' . '-P_' . $patch, $dropList, 60 * 60 * 24 * 30);
             }
         }
-
         return $dropList;
     }
 
-    public function getGORelatedList(int $id, int $patch = 10, int $limit = 1000): array
+    public function getGORelatedList(int $id,$realmid, int $patch = 10, int $limit = 1000): array
     {
+        $isExp = $this->wowrealm->isTbc($realmid);                
+        switch ($isExp) 
+        {
+            case 0:
+                $world_db = $this->world;
+            break;
+        
+            case 1:
+                $world_db = $this->world_tbc;
+            break;
+        }
         $goList      = [];
-        $goListCache = $this->wowgeneral->getRedisCMS() ? $this->cache->redis->get('itemID_' . $id . '-GORelated' . '-P_' . $patch) : false;
+        $goListCache = $this->wowgeneral->getRedisCMS() ? $this->cache->redis->get('itemID_' . $id . '-GORelated' . '-P_10') : false;
 
-        if ($goListCache) {
+        if ($goList) {
             $goList = $goListCache;
         } else {
-            $refData = $this->getDropTable($id, 'gameobject_loot_template', $patch);
+            $refData = $this->getDropTable($id, 'gameobject_loot_template', $realmid);
             if ($refData) {
                 $objects = array_keys($refData);
-                $subQ    = $this->world->select("map")->where("id=gt.entry")->limit(1)->get_compiled_select("gameobject");
-                $subQ2   = $this->world->select("max(patch)", false)->where("gt.entry=gt2.entry")->where("patch <=", $patch)->get_compiled_select("gameobject_template gt2");
+                $subQ    = $world_db->select("map")->where("id=gt.entry")->limit(1)->get_compiled_select("gameobject");
+                $subQ2   = $world_db->select("", false)->where("gt.entry=gt2.entry")->get_compiled_select("gameobject_template gt2");
 
-                $this->world->select('entry, name, type, data0, data1, (' . $subQ . ') as map');
-                $this->world->from('gameobject_template gt');
-                $this->world->where('patch=(' . $subQ2 . ')');
-                $this->world->where_in('data1', $objects);
-                $this->world->group_by('gt.entry');
-                $this->world->limit($limit); //TODO: Call by API with pagination, eliminate this.
-                $objList = $this->world->get()->result_array();
+                $world_db->select('entry, name, type, data0, data1, (' . $subQ . ') as map');
+                $world_db->from('gameobject_template gt');
+                $world_db->where_in('data1', $objects);
+                $world_db->group_by('gt.entry');
+                $world_db->limit($limit); //TODO: Call by API with pagination, eliminate this.
+                $objList = $world_db->get()->result_array();
 
                 if ($objList) {
                     // Merge the data
@@ -969,23 +1096,34 @@ class Database_model extends CI_Model
         return $goList;
     }
 
-    public function getFishedInList(int $id, int $patch = 10, int $limit = 1000): array
+    public function getFishedInList(int $id, $realmid,int $patch = 10, int $limit = 1000): array
     {
+        $isExp = $this->wowrealm->isTbc($realmid);                
+        switch ($isExp) 
+        {
+            case 0:
+                $world_db = $this->world;
+            break;
+        
+            case 1:
+                $world_db = $this->world_tbc;
+            break;
+        }
         $fishedInList  = [];
-        $fishedInCache = $this->wowgeneral->getRedisCMS() ? $this->cache->redis->get('itemID_' . $id . '-fishedIn' . '-P_' . $patch) : false;
+        $fishedInCache = $this->wowgeneral->getRedisCMS() ? $this->cache->redis->get('itemID_' . $id . '-fishedIn' . '-P_10') : false;
 
         if ($fishedInCache) {
             $fishedInList = $fishedInCache;
         } else {
-            $refData = $this->getDropTable($id, 'fishing_loot_template', $patch);
+            $refData = $this->getDropTable($id, 'fishing_loot_template', $realmid);
             if ($refData) {
                 $zones = array_keys($refData);
-                $this->world->select('entry, map_id, zone_id, area_level, name, team');
-                $this->world->from('area_template at');
-                $this->world->where_in('entry', $zones);
-                $this->world->group_by('at.entry');
-                $this->world->limit($limit); //TODO: Call by API with pagination, eliminate this.
-                $fishedInList = $this->world->get()->result_array();
+                $world_db->select('entry, map_id, zone_id, area_level, name, team');
+                $world_db->from('area_template at');
+                $world_db->where_in('entry', $zones);
+                $world_db->group_by('at.entry');
+                $world_db->limit($limit); //TODO: Call by API with pagination, eliminate this.
+                $fishedInList = $world_db->get()->result_array();
 
                 if ($fishedInList) {
                     // Merge the data
@@ -998,7 +1136,7 @@ class Database_model extends CI_Model
 
                     if ($this->wowgeneral->getRedisCMS()) {
                         // Cache for 30 day
-                        $this->cache->redis->save('itemID_' . $id . '-fishedIn' . '-P_' . $patch, $fishedInList, 60 * 60 * 24 * 30);
+                        $this->cache->redis->save('itemID_' . $id . '-fishedIn' . '-P_10', $fishedInList, 60 * 60 * 24 * 30);
                     }
                 }
             }
@@ -1007,25 +1145,35 @@ class Database_model extends CI_Model
         return $fishedInList;
     }
 
-    public function getRewardList(int $id, int $patch = 10): array
+    public function getRewardList(int $id, $realmid,int $patch = 10): array
     {
+        $isExp = $this->wowrealm->isTbc($realmid);                
+        switch ($isExp) 
+        {
+            case 0:
+                $world_db = $this->world;
+            break;
+        
+            case 1:
+                $world_db = $this->world_tbc;
+            break;
+        }
         $rewardList      = [];
         $rewardListCache = $this->wowgeneral->getRedisCMS() ? $this->cache->redis->get('itemID_' . $id . '-RewardList') : false;
 
         if ($rewardListCache) {
             $rewardList = $rewardListCache;
         } else {
-            $subQ = $this->world->select("max(patch)", false)->where("qt.entry=qt2.entry")->where("patch <=", $patch)->get_compiled_select("quest_template qt2");
 
-            $this->world->distinct();
-            $this->world->select('qt.entry as qentry, qt.Title, qt.MinLevel, qt.QuestLevel, qt.RewXP, qt.RewOrReqMoney, t1.name, t1.quality, t1.entry');
-            $this->world->from('item_template t1');
-            $this->world->join('(SELECT * FROM quest_template) qt', 'qt.RewItemId1 = t1.entry', 'left');
-            $this->world->where('t1.entry', $id);
-            $this->world->where('qt.patch=(' . $subQ . ')');
-            $this->world->order_by('qt.RewXP', 'DESC');
-            $this->world->limit(1);
-            $rewardList = $this->world->get()->result_array();
+
+            $world_db->distinct();
+            $world_db->select('qt.entry as qentry, qt.Title, qt.MinLevel, qt.QuestLevel, qt.RewMoneyMaxLevel, qt.RewOrReqMoney, t1.name, t1.quality, t1.entry');
+            $world_db->from('item_template t1');
+            $world_db->join('(SELECT * FROM quest_template) qt', 'qt.RewItemId1 = t1.entry', 'left');
+            $world_db->where('t1.entry', $id);
+            $world_db->order_by('qt.RewMoneyMaxLevel', 'DESC');
+            $world_db->limit(1);
+            $rewardList = $world_db->get()->result_array();
 
             if ($rewardList) {
                 if ($this->wowgeneral->getRedisCMS()) {
@@ -1038,20 +1186,20 @@ class Database_model extends CI_Model
         return $rewardList;
     }
 
-    public function getContainsList(int $id, int $patch = 10): array
+    public function getContainsList(int $id, $realmid,int $patch = 10): array
     {
         $containsList      = [];
-        $containsListCache = $this->wowgeneral->getRedisCMS() ? $this->cache->redis->get('itemID_' . $id . '-containsIn' . '-P_' . $patch) : false;
+        $containsListCache = $this->wowgeneral->getRedisCMS() ? $this->cache->redis->get('itemID_' . $id . '-containsIn' . '-P_10') : false;
 
         if ($containsListCache) {
             $containsList = $containsListCache;
         } else {
-            $containsList = $this->getLootTable($id, 'item_loot_template', $patch = 10, 1);
+            $containsList = $this->getLootTable($id, $realmid,'item_loot_template', $patch = 10, 1);
 
             if ($containsList) {
                 if ($this->wowgeneral->getRedisCMS()) {
                     // Cache for 30 day
-                    $this->cache->redis->save('itemID_' . $id . '-containsIn' . '-P_' . $patch, $containsList, 60 * 60 * 24 * 30);
+                    $this->cache->redis->save('itemID_' . $id . '-containsIn' . '-P_10', $containsList, 60 * 60 * 24 * 30);
                 }
             }
         }
@@ -1059,20 +1207,20 @@ class Database_model extends CI_Model
         return $containsList;
     }
 
-    public function getDisenchantList(int $disenchant_id, int $patch = 10): array
+    public function getDisenchantList(int $disenchant_id,$realmid,int $patch = 10): array
     {
         $disenchantList      = [];
-        $disenchantListCache = $this->wowgeneral->getRedisCMS() ? $this->cache->redis->get('itemID_' . $disenchant_id . '-disenchantsIn' . '-P_' . $patch) : false;
+        $disenchantListCache = $this->wowgeneral->getRedisCMS() ? $this->cache->redis->get('itemID_' . $disenchant_id . '-disenchantsIn' . '-P_10') : false;
 
         if ($disenchantListCache) {
             $disenchantList = $disenchantListCache;
         } else {
-            $disenchantList = $this->getLootTable($disenchant_id, 'disenchant_loot_template', $patch = 10, 1);
+            $disenchantList = $this->getLootTable($disenchant_id,$realmid, 'disenchant_loot_template', $patch = 10, 1);
 
             if ($disenchantList) {
                 if ($this->wowgeneral->getRedisCMS()) {
                     // Cache for 30 day
-                    $this->cache->redis->save('itemID_' . $disenchant_id . '-disenchantsIn' . '-P_' . $patch, $disenchantList, 60 * 60 * 24 * 30);
+                    $this->cache->redis->save('itemID_' . $disenchant_id . '-disenchantsIn' . '-P_10', $disenchantList, 60 * 60 * 24 * 30);
                 }
             }
         }
@@ -1080,27 +1228,37 @@ class Database_model extends CI_Model
         return $disenchantList;
     }
 
-    public function getVendorList(int $id, int $patch = 10): array
+    public function getVendorList(int $id, $realmid,int $patch = 10): array
     {
+        $isExp = $this->wowrealm->isTbc($realmid);                
+        switch ($isExp) 
+        {
+            case 0:
+                $world_db = $this->world;
+            break;
+        
+            case 1:
+                $world_db = $this->world_tbc;
+            break;
+        }
         $vendorList      = [];
         $vendorListCache = $this->wowgeneral->getRedisCMS() ? $this->cache->redis->get('itemID_' . $id . '-VendorList') : false;
 
         if ($vendorListCache) {
             $vendorList = $vendorListCache;
         } else {
-            $subQ  = $this->world->select('buy_price')->where("entry = nv.item")->limit(1)->get_compiled_select('item_template');
-            $subQ2 = $this->world->select('map')->where("id=ct.entry")->limit(1)->get_compiled_select('creature');
-            $subQ3 = $this->world->select("max(patch)", false)->where("ct.entry=ct2.entry")->where("patch <=", $patch)->get_compiled_select("creature_template ct2");
+            $subQ  = $world_db->select('BuyPrice')->where("entry = nv.item")->limit(1)->get_compiled_select('item_template');
+            $subQ2 = $world_db->select('map')->where("id=ct.Entry")->limit(1)->get_compiled_select('creature');
+            $subQ3 = $world_db->select("", false)->where("ct.Entry=ct2.Entry")->get_compiled_select("creature_template ct2");
 
-            $this->world->distinct();
-            $this->world->select('ct.entry, ct.name, ct.subname, ct.level_min, ct.level_max, nv.maxcount, (' . $subQ . ') as buy_price, (' . $subQ2 . ') as map');
-            $this->world->from('creature_template ct');
-            $this->world->join('(SELECT entry, item, maxcount FROM npc_vendor) nv', 'nv.entry = ct.entry', 'inner');
-            $this->world->where('nv.item', $id);
-            $this->world->where('ct.patch=(' . $subQ3 . ')');
-            $this->world->order_by('nv.entry', 'ASC');
-            $this->world->limit(50);
-            $vendorList = $this->world->get()->result_array();
+            $world_db->distinct();
+            $world_db->select('ct.Entry, ct.Name, ct.SubName, ct.MinLevel, ct.MaxLevel, nv.maxcount, (' . $subQ . ') as buy_price, (' . $subQ2 . ') as map');
+            $world_db->from('creature_template ct');
+            $world_db->join('(SELECT entry, item, maxcount FROM npc_vendor) nv', 'nv.entry = ct.Entry', 'inner');
+            $world_db->where('nv.item', $id);
+            $world_db->order_by('nv.entry', 'ASC');
+            $world_db->limit(50);
+            $vendorList = $world_db->get()->result_array();
 
             if ($vendorList) {
                 if ($this->wowgeneral->getRedisCMS()) {
@@ -1113,15 +1271,27 @@ class Database_model extends CI_Model
         return $vendorList;
     }
 
-    public function getDropTable(int $item, string $table, int $patch = 10): array
+    public function getDropTable(int $item, string $table, $realmid): array
     {
+        //$patch;
+        $isExp = $this->wowrealm->isTbc($realmid);                
+        switch ($isExp) 
+        {
+            case 0:
+                $world_db = $this->world;
+            break;
+        
+            case 1:
+                $world_db = $this->world_tbc;
+            break;
+        }
         $total = 0;
 
         // Reverse search for loot starting from the reference table
         // Looking for groups
         $drop     = [];
         $curtable = 'reference_loot_template';
-        $rows     = $this->world->select('entry, groupid, ChanceOrQuestChance, mincountOrRef, maxcount, condition_id')->where('item', $item)->where('mincountOrRef >', 0)->where('patch_min <=', $patch)->where('patch_max >=', $patch)->get($curtable)->result_array();
+        $rows     = $world_db->select('entry, groupid, ChanceOrQuestChance, mincountOrRef, maxcount, condition_id')->where('item', $item)->where('mincountOrRef >', 0)->get($curtable)->result_array();
 
         while (true) {
             foreach ($rows as $i => $row) {
@@ -1131,7 +1301,7 @@ class Database_model extends CI_Model
                     // Entry from a group with an equal drop chance
                     $zerocount = 0;
                     $chancesum = 0;
-                    $subrows   = $this->world->select('ChanceOrQuestChance, mincountOrRef, maxcount, condition_id')->where('entry', $row['entry'])->where('groupid', $row['groupid'])->where('patch_min <=', $patch)->where('patch_max >=', $patch)->get($curtable)->result_array();
+                    $subrows   = $world_db->select('ChanceOrQuestChance, mincountOrRef, maxcount, condition_id')->where('entry', $row['entry'])->where('groupid', $row['groupid'])->get($curtable)->result_array();
 
                     foreach ($subrows as $i => $subrow) {
                         if ($subrow['ChanceOrQuestChance'] == 0) {
@@ -1199,7 +1369,7 @@ class Database_model extends CI_Model
                     foreach ($drop as $i => $value) {
                         $drop[$i]['checked'] = false;
                     }
-                    $rows = $this->world->select('entry, groupid, ChanceOrQuestChance, mincountOrRef, maxcount, condition_id')->where('item', $item)->where('mincountOrRef >', 0)->where('patch_min <=', $patch)->where('patch_max >=', $patch)->get($curtable)->result_array();
+                    $rows = $world_db->select('entry, groupid, ChanceOrQuestChance, mincountOrRef, maxcount, condition_id')->where('item', $item)->where('mincountOrRef >', 0)->get($curtable)->result_array();
                 } else // Done searching
                 {
                     break;
@@ -1207,7 +1377,7 @@ class Database_model extends CI_Model
             } else {
                 // Unverified element found, check it
                 $drop[$num]['checked'] = true;
-                $rows                  = $this->world->select('entry, groupid, ChanceOrQuestChance, mincountOrRef, maxcount, condition_id')->where('mincountOrRef', $num)->where('patch_min <=', $patch)->where('patch_max >=', $patch)->get($curtable)->result_array();
+                $rows                  = $world_db->select('entry, groupid, ChanceOrQuestChance, mincountOrRef, maxcount, condition_id')->where('mincountOrRef', $num)->get($curtable)->result_array();
             }
         }
 
@@ -1221,25 +1391,34 @@ class Database_model extends CI_Model
         return $drop;
     }
 
-    public function getLootTable(int $item, string $table, int $patch = 10, float $mod = 1.0): array
+    public function getLootTable(int $item,$realmid, string $table, int $patch = 10, float $mod = 1.0): array
     {
+        $isExp = $this->wowrealm->isTbc($realmid);                
+        switch ($isExp) 
+        {
+            case 0:
+                $world_db = $this->world;
+            break;
+        
+            case 1:
+                $world_db = $this->world_tbc;
+            break;
+        }
         $loot   = [];
         $groups = [];
         $cols   = [ // Cols will be different for specific template, later
-            'item_loot_template'       => 'name, item_level, required_level, quality, class, subclass',
-            'disenchant_loot_template' => 'name, item_level, required_level, quality, class, subclass',
-            'reference_loot_template'  => 'name, item_level, required_level, quality, class, subclass'
+            'item_loot_template'       => 'name, ItemLevel, RequiredLevel, Quality, class, subclass',
+            'disenchant_loot_template' => 'name, ItemLevel, RequiredLevel, Quality, class, subclass',
+            'reference_loot_template'  => 'name, ItemLevel, RequiredLevel, Quality, class, subclass'
         ];
 
-        $this->world->select('l.ChanceOrQuestChance, l.mincountOrRef, l.maxcount, l.groupid, l.condition_id, i.entry,' . $cols[$table]);
-        $this->world->from($table . ' l');
-        $this->world->join('(SELECT * FROM item_template) i', 'l.item=i.entry', 'left');
-        $this->world->where('l.entry', $item);
-        $this->world->where('patch_min <=', $patch);
-        $this->world->where('patch_max >=', $patch);
-        $this->world->group_by('i.entry');
-        $this->world->limit(250);
-        $rows = $this->world->get()->result_array();
+        $world_db->select('l.ChanceOrQuestChance, l.mincountOrRef, l.maxcount, l.groupid, l.condition_id, i.entry,' . $cols[$table]);
+        $world_db->from($table . ' l');
+        $world_db->join('(SELECT * FROM item_template) i', 'l.item=i.entry', 'left');
+        $world_db->where('l.entry', $item);
+        $world_db->group_by('i.entry');
+        $world_db->limit(250);
+        $rows = $world_db->get()->result_array();
 
         $last_group   = 0;
         $lq_eq_chance = 100;
@@ -1249,7 +1428,7 @@ class Database_model extends CI_Model
             if ($row['groupid'] == 0) {
                 // Link
                 if ($row['mincountOrRef'] < 0) {
-                    addLoot($loot, $this->getLootTable(-$row['mincountOrRef'], 'reference_loot_template', $patch, abs($row['ChanceOrQuestChance']) / 100 * $row['maxcount'] * $mod));
+                    addLoot($loot, $this->getLootTable(-$row['mincountOrRef'],$realmid, 'reference_loot_template', $patch, abs($row['ChanceOrQuestChance']) / 100 * $row['maxcount'] * $mod));
                 } else // Ordinary drop
                 {
                     addLoot($loot, array(
@@ -1276,7 +1455,7 @@ class Database_model extends CI_Model
                     $lq_eq_chance = max($lq_eq_chance, 0);
 
                     if ($row['mincountOrRef'] < 0) {
-                        addLoot($loot, $this->getLootTable(-$row['mincountOrRef'], 'reference_loot_template', $patch, $chance / 100 * $row['maxcount'] * $mod));
+                        addLoot($loot, $this->getLootTable(-$row['mincountOrRef'],$realmid, 'reference_loot_template', $patch, $chance / 100 * $row['maxcount'] * $mod));
                     } else {
                         addLoot($loot, array(
                             array_merge(array(
@@ -1318,8 +1497,19 @@ class Database_model extends CI_Model
      *
      * @return array
      */
-    public function findConditionByID(int $id): array
+    public function findConditionByID(int $id, $realmid): array
     {
+        $isExp = $this->wowrealm->isTbc($realmid);                
+        switch ($isExp) 
+        {
+            case 0:
+                $world_db = $this->world;
+            break;
+        
+            case 1:
+                $world_db = $this->world_tbc;
+            break;
+        }
         $condition      = '';
         $conditionCache = $this->wowgeneral->getRedisCMS() ? $this->cache->redis->get('conditionID_' . $id) : false;
 
@@ -1327,7 +1517,7 @@ class Database_model extends CI_Model
             $condition = $conditionCache;
         } else {
             if ($id > 0) {
-                $condition = $this->world->where('condition_entry', $id)->get('conditions')->row_array();
+                $condition = $world_db->where('condition_entry', $id)->get('conditions')->row_array();
             }
 
             if ($condition) {
@@ -1347,7 +1537,7 @@ class Database_model extends CI_Model
      *
      * @return string
      */
-    public function describeCondition(array $condition, bool $targetsSwapped): string
+    public function describeCondition(array $condition, bool $targetsSwapped,$realmid): string
     {
         $conditionDescCache = $this->wowgeneral->getRedisCMS() ? $this->cache->redis->get('conditionDescArrID_' . $condition['condition_entry']) : false;
 
@@ -1369,9 +1559,9 @@ class Database_model extends CI_Model
                 case -3: // Not
                 {
                     $description .= "Not (";
-                    $reference   = $this->findConditionByID((int)$condition['value1']);
+                    $reference   = $this->findConditionByID((int)$condition['value1'],$realmid);
                     if ($reference != null) {
-                        $description .= $this->describeCondition($reference, $targetsSwapped);
+                        $description .= $this->describeCondition($reference, $targetsSwapped,$realmid);
                     } else {
                         $description .= "Invalid condition " . $condition['value1'];
                     }
@@ -1381,25 +1571,25 @@ class Database_model extends CI_Model
                 case -2: // Or
                 {
                     $description .= "(";
-                    $reference1  = $this->findConditionByID((int)$condition['value1']);
+                    $reference1  = $this->findConditionByID((int)$condition['value1'],$realmid);
                     if ($reference1 != null) {
-                        $description .= $this->describeCondition($reference1, $targetsSwapped);
+                        $description .= $this->describeCondition($reference1, $targetsSwapped,$realmid);
                     } else {
                         $description .= "Invalid condition " . $condition['value1'];
                     }
                     $description .= ") Or (";
-                    $reference2  = $this->findConditionByID((int)$condition['value2']);
+                    $reference2  = $this->findConditionByID((int)$condition['value2'],$realmid);
                     if ($reference2 != null) {
-                        $description .= $this->describeCondition($reference2, $targetsSwapped);
+                        $description .= $this->describeCondition($reference2, $targetsSwapped,$realmid);
                     } else {
                         $description .= "Invalid condition " . $condition['value2'];
                     }
                     $description .= ")";
                     if ($condition['value3'] != 0) {
                         $description .= " Or (";
-                        $reference3  = $this->findConditionByID((int)$condition['value3']);
+                        $reference3  = $this->findConditionByID((int)$condition['value3'],$realmid);
                         if ($reference3 != null) {
-                            $description .= $this->describeCondition($reference3, $targetsSwapped);
+                            $description .= $this->describeCondition($reference3, $targetsSwapped,$realmid);
                         } else {
                             $description .= "Invalid condition " . $condition['value3'];
                         }
@@ -1407,9 +1597,9 @@ class Database_model extends CI_Model
                     }
                     if ($condition['value4'] != 0) {
                         $description .= " Or (";
-                        $reference4  = $this->findConditionByID((int)$condition['value4']);
+                        $reference4  = $this->findConditionByID((int)$condition['value4'],$realmid);
                         if ($reference4 != null) {
-                            $description .= $this->describeCondition($reference4, $targetsSwapped);
+                            $description .= $this->describeCondition($reference4, $targetsSwapped,$realmid);
                         } else {
                             $description .= "Invalid condition " . $condition['value4'];
                         }
@@ -1420,25 +1610,25 @@ class Database_model extends CI_Model
                 case -1: // And
                 {
                     $description .= "(";
-                    $reference1  = $this->findConditionByID((int)$condition['value1']);
+                    $reference1  = $this->findConditionByID((int)$condition['value1'],$realmid);
                     if ($reference1 != null) {
-                        $description .= $this->describeCondition($reference1, $targetsSwapped);
+                        $description .= $this->describeCondition($reference1, $targetsSwapped,$realmid);
                     } else {
                         $description .= $condition['value1'] . ": Invalid condition";
                     }
                     $description .= ") And (";
-                    $reference2  = $this->findConditionByID((int)$condition['value2']);
+                    $reference2  = $this->findConditionByID((int)$condition['value2'],$realmid);
                     if ($reference2 != null) {
-                        $description .= $this->describeCondition($reference2, $targetsSwapped);
+                        $description .= $this->describeCondition($reference2, $targetsSwapped,$realmid);
                     } else {
                         $description .= $condition['value2'] . ": Invalid condition";
                     }
                     $description .= ")";
                     if ($condition['value3'] != 0) {
                         $description .= " And (";
-                        $reference3  = $this->findConditionByID((int)$condition['value3']);
+                        $reference3  = $this->findConditionByID((int)$condition['value3'],$realmid);
                         if ($reference3 != null) {
-                            $description .= $this->describeCondition($reference3, $targetsSwapped);
+                            $description .= $this->describeCondition($reference3, $targetsSwapped,$realmid);
                         } else {
                             $description .= $condition['value3'] . ": Invalid condition";
                         }
@@ -1446,9 +1636,9 @@ class Database_model extends CI_Model
                     }
                     if ($condition['value4'] != 0) {
                         $description .= " And (";
-                        $reference4  = $this->findConditionByID((int)$condition['value4']);
+                        $reference4  = $this->findConditionByID((int)$condition['value4'],$realmid);
                         if ($reference4 != null) {
-                            $description .= $this->describeCondition($reference4, $targetsSwapped);
+                            $description .= $this->describeCondition($reference4, $targetsSwapped,$realmid);
                         } else {
                             $description .= $condition['value4'] . ": Invalid condition";
                         }
@@ -1748,9 +1938,9 @@ class Database_model extends CI_Model
                 case 47: // Map Event Targets
                 {
                     $description .= "Extra Targets Of Scripted Map Event " . $condition['value1'] . " Satisfy condition (";
-                    $reference   = $this->findConditionByID((int)$condition['value2']);
+                    $reference   = $this->findConditionByID((int)$condition['value2'],$realmid);
                     if ($reference != null) {
-                        $description .= $this->describeCondition($reference, $targetsSwapped);
+                        $description .= $this->describeCondition($reference, $targetsSwapped,$realmid);
                     } else {
                         $description .= $condition['value2'] . ": Invalid condition";
                     }
@@ -1770,9 +1960,9 @@ class Database_model extends CI_Model
                 case 50: // Object Fit $condition
                 {
                     $description .= "GameObject With Guid " . $condition['value1'] . " Satisfies condition (";
-                    $reference   = $this->findConditionByID((int)$condition['value2']);
+                    $reference   = $this->findConditionByID((int)$condition['value2'],$realmid);
                     if ($reference != null) {
-                        $description .= $this->describeCondition($reference, $targetsSwapped);
+                        $description .= $this->describeCondition($reference, $targetsSwapped,$realmid);
                     } else {
                         $description .= $condition['value2'] . ": Invalid condition";
                     }
@@ -1831,57 +2021,82 @@ class Database_model extends CI_Model
         return $description . ((($condition['flags'] & 1) != 0) ? ")" : "");
     }
 
-    public function searchItem(string $entry, int $patch = 10, int $limit = 0): array
+    public function searchItem(string $entry, $realmid,int $patch = 10, int $limit = 0): array
     {
+        $isExp = $this->wowrealm->isTbc($realmid);                
+        switch ($isExp) 
+        {
+            case 0:
+                $world_db = $this->world;
+            break;
+        
+            case 1:
+                $world_db = $this->world_tbc;
+            break;
+        }
         // Show only the most recent version
-        $subQ = $this->world->select("max(patch)", false)->where("t1.entry=t2.entry")->where("patch <=", $patch)->get_compiled_select("item_template t2");
 
-        $this->world->select('entry, name, quality, class, subclass, item_level, required_level, inventory_type');
-        $this->world->where('patch=(' . $subQ . ')');
+        $world_db->select('entry, name, Quality, class, subclass, ItemLevel, RequiredLevel, InventoryType');
 
         if (ctype_digit($entry)) {
-            $this->world->where('entry', $entry);
+            $world_db->where('entry', $entry);
         } else {
-            $this->world->like('name', $entry);
+            $world_db->like('name', $entry);
         }
 
         if ($limit > 0) {
-            $this->world->limit($limit);
+            $world_db->limit($limit);
         }
-        $this->world->order_by('quality', 'DESC');
-        $res = $this->world->get('item_template t1')->result_array() ?? [];
+        $world_db->order_by('Quality', 'DESC');
+        $res = $world_db->get('item_template t1')->result_array() ?? [];
 
         if ($res) {
             foreach ($res as $key => $val) {
-                $res[$key]['icon'] = $this->getIconName($val['entry'], 10);
+                $res[$key]['icon'] = $this->getIconName($val['entry'],$realmid, 10);
             }
         }
 
         return $res;
     }
 
-    public function searchSpell(string $entry, int $patch = 10, int $limit = 0): array
+    public function searchSpell(string $entry, $realmid,int $patch = 10, int $limit = 0): array
     {
+        $isExp = $this->wowrealm->isTbc($realmid);                
+        switch ($isExp) 
+        {
+            case 0:
+                $world_db = $this->world;
+			$world_db->select('Id, SpellName, Rank1, BaseLevel, School, SpellIconID');
+
+            break;
+        
+            case 1:
+                $world_db = $this->world_tbc;
+			$world_db->select('Id, SpellName, Rank1, BaseLevel, SchoolMask, SpellIconID');
+
+            break;
+        }
+
         // Show only the most recent version
-        $subQ = $this->world->select("max(build)", false)->where("t1.entry=t2.entry")->where("build <=", patchToBuild($patch))->get_compiled_select("spell_template t2");
 
-        $this->world->select('entry, name, nameSubtext, baseLevel, school, spellIconId');
-        $this->world->where('build=(' . $subQ . ')');
 
+		
+        
         if (ctype_digit($entry)) {
-            $this->world->where('entry', $entry);
+            $world_db->where('Id', $entry);
         } else {
-            $this->world->like('name', $entry);
+            $world_db->like('SpellName', $entry);
         }
         if ($limit > 0) {
-            $this->world->limit($limit);
+            $world_db->limit($limit);
         }
 
-        $res = $this->world->get('spell_template t1')->result_array() ?? [];
+        $res = $world_db->get('spell_template t1')->result_array() ?? [];
+
 
         if ($res) {
             foreach ($res as $key => $val) {
-                $res[$key]['icon'] = $this->config->item('spell_icons')[$val['spellIconId']] ?? 'Trade_Engineering';
+                $res[$key]['icon'] = $this->config->item('spell_icons')[$val['SpellIconID']] ?? 'Trade_Engineering';
             }
         }
 

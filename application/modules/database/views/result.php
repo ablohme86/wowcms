@@ -1,3 +1,23 @@
+<?php
+        $realm = $this->input->get('realm');    
+        if ($realm == "")
+        {
+            $realm = $this->input->post('realm');
+        }
+        $data = $this->wowrealm->getRealm($realm)->row_array();
+
+        if ($data < 1)
+        {
+
+                redirect(base_url('404'), 'refresh');
+          
+        }
+        
+		$realms = $this->wowrealm->getRealms()->result();
+   
+   echo "Do we stuck here??";
+
+?>
 <link rel="stylesheet" href="<?= base_url() . 'application/modules/database/assets/css/database.css'; ?>"/>
 <section class="uk-section uk-section-xsmall uk-padding-remove slider-section">
     <div class="uk-background-cover header-height header-section"
@@ -14,44 +34,41 @@
                                 <div class="uk-inline uk-width-1-1">
                                     <h2 class="uk-text-center">Database Search</h2>
                                     <table class="uk-table uk-table-small uk-table-responsive">
-                                        <?= form_open('database/result', array('id' => "searchDatabase", 'method' => "get")); ?>
+                                        <?= form_open('database/result', array('id' => "searchDatabase",'realm' => $realm, 'method' => "get")); ?>
                                         <tr>
                                             <td>
                                                 <input class="uk-input" style="display:inline;" id="search"
                                                        name="search" type="text" minlength="3" autocomplete="off"
                                                        placeholder="Search Item & Spell by Name or ID" required>
                                             </td>
-                                            <?= form_close(); ?>
                                             <td class="uk-width-1-4">
-                                                <?= form_open('database/result' . ($_SERVER['QUERY_STRING'] ? '?' . $_SERVER['QUERY_STRING'] : ''), array('method' => "post")); ?>
-                                                <select name="globpatch" id="globpatch" class="uk-select" onchange="this.form.submit()">
-                                                    <option value="" selected disabled hidden><?= $patch === 10 ? 'Current Patch: ' . getPatchName($patch) . ' (Default)' : 'Current Patch: ' . getPatchName($patch) ?></option>
-                                                    <option value="0">1.2</option>
-                                                    <option value="1">1.3</option>
-                                                    <option value="2">1.4</option>
-                                                    <option value="3">1.5</option>
-                                                    <option value="4">1.6</option>
-                                                    <option value="5">1.7</option>
-                                                    <option value="6">1.8</option>
-                                                    <option value="7">1.9</option>
-                                                    <option value="8">1.10</option>
-                                                    <option value="9">1.11</option>
-                                                    <option value="10">1.12</option>
-                                                </select>
-                                                <?= form_close(); ?>
-                                            </td>
+                                          <select class="uk-inline uk-input minimal" style="display:inline;"
+                                                  id="realm"
+                                                  name="realm">
+                                          
+                                              
+                                              <?php foreach ($realms as $realmInfo): ?>
+                                                <?php if ($realmInfo->id == $realm): ?>
+                                                    <option value="<?= $realmInfo->id ?>" selected><?= $this->wowrealm->getRealmName($realmInfo->id); ?></option>
+
+                                                    <?php else: ?>
+                                                        <option value="<?= $realmInfo->id ?>"><?= $this->wowrealm->getRealmName($realmInfo->id); ?></option>
+
+                                                    <?php endif; ?>
+                                              
+                                              
+                                              <?php endforeach; ?>
+                                          </select></td>
                                         </tr>
+                                        <?= form_close(); ?>
+
                                     </table>
                                 </div>
                             </div>
                         </div>
                         <input class="uk-button uk-button-default uk-width-1-1" type="submit" form="searchDatabase" value="search">
                         <br>
-                        <?php if (empty($_GET['search'])) {
-                            echo "\n<br/>There are no recent searches.";
-                        } else {
-                            echo "\n<br/>Recent search: <span class=\"system\">[" . $_GET['search'] . "]</span>";
-                        } ?>
+              
                     </div>
                 </article>
             </div>
@@ -94,11 +111,11 @@
                                                         <ins class="yesilcms-lazy" style="background-image: url('<?= base_url() . 'application/modules/database/assets/images/icons/' . $item['icon'] ?>.png');"></ins>
                                                         <del></del>
                                                     </span>
-                                                            <a href="<?= base_url($lang) ?>/item/<?= $item['entry'] ?>/<?= $patch ?>" data-item="item=<?= $item['entry'] ?>" data-patch='<?= $patch ?>'><span class="q<?= $item['quality'] ?>"><?= $item['name'] ?></span></a>
+                                                            <a href="<?= base_url($lang) ?>/item/<?= $item['entry'] ?>/<?= $realm ?>" data-item="item=<?= $item['entry'] ?>" data-realm='<?= $realm ?>' data-patch='<?= 10 ?>'><span class="q<?= $item['Quality'] ?>"><?= $item['name'] ?></span></a>
                                                         </td>
-                                                        <td class="uk-text-center"><?= $item['item_level'] ?></td>
-                                                        <td class="uk-text-center"><?= $item['required_level'] ?></td>
-                                                        <td class="uk-text-center"><?= itemInventory($item['inventory_type']) ?></td>
+                                                        <td class="uk-text-center"><?= $item['ItemLevel'] ?></td>
+                                                        <td class="uk-text-center"><?= $item['RequiredLevel'] ?></td>
+                                                        <td class="uk-text-center"><?= itemInventory($item['InventoryType']) ?></td>
                                                         <td class="uk-text-center"><?= itemSubClass($item['class'], $item['subclass']) ?? '' ?> </td>
                                                     </tr>
                                                 <?php endforeach; ?>
@@ -126,13 +143,24 @@
                                                         <ins class="yesilcms-lazy" style="background-image: url('<?= base_url() . 'application/modules/database/assets/images/icons/' . $spell['icon'] ?>.png');"></ins>
                                                         <del></del>
                                                     </span>
-                                                            <a href="<?= base_url($lang) ?>/spell/<?= $spell['entry'] ?>/<?= $patch ?>" data-spell="spell=<?= $spell['entry'] ?>" data-patch='<?= $patch ?>'><?= $spell['name'] ?></a>
-                                                            <?php if ($spell['nameSubtext']) : ?>
-                                                                <div class="srank"><?= $spell['nameSubtext'] ?></div>
+                                                            <a href="<?= base_url($lang) ?>/spell/<?= $spell['Id'] ?>/<?= $realm ?>" data-spell="spell=<?= $spell['Id'] ?>" data-realm='<?= $realm ?>' data-patch='<?= 10 ?>'><?= $spell['SpellName'] ?></a>
+                                                            <?php if ($spell['Rank1']) : ?>
+                                                                <div class="srank"><?= $spell['Rank1'] ?></div>
                                                             <?php endif; ?>
                                                         </td>
-                                                        <td class="uk-text-center"><?= $spell['baseLevel'] ?></td>
-                                                        <td class="uk-text-center"><?= schoolType($spell['school']) ?></td>
+                                                        <td class="uk-text-center"><?= $spell['BaseLevel'] ?></td>
+														<?php if ($this->wowrealm->isTbc($realm) == 0) 
+														{
+															printf('<td class="uk-text-center">%s</td>',schoolType($spell['School']));
+														}
+														else
+														{
+															// TBC uses SchoolMask
+															printf('<td class="uk-text-center">%s</td>',schoolType($spell['SchoolMask']));
+														}
+
+														?>
+
                                                     </tr>
                                                 <?php endforeach; ?>
                                                 </tbody>
@@ -156,7 +184,7 @@
 <script type="text/javascript" src="<?= base_url() . 'application/modules/database/assets/js/tooltip.js'; ?>"></script>
 <script type="text/javascript" src="<?= base_url() . 'application/modules/database/assets/js/jquery.dataTables.min.js'; ?>"></script>
 <script type="text/javascript" src="<?= base_url() . 'application/modules/database/assets/js/dataTables.uikit.min.js'; ?>"></script>
-<script type="text/javascript" src="<?= base_url() . 'application/modules/timeline/assets/js/jquery.lazy.min.js'; ?>"></script>
+<script type="text/javascript" src="/jquery.lazy.min.js"></script>
 <script type="text/javascript" src="<?= base_url() . 'application/modules/database/assets/js/bootstrap3-typeahead.min.js'; ?>"></script>
 <script>
     const baseURL = "<?= base_url($lang); ?>";
@@ -177,7 +205,7 @@
                 delay: 333,
 
                 displayText: function (item) {
-
+                    console.log("inside displayText...");
                     type = "Item";
 
                     if (typeof item.quality === 'undefined') {
@@ -194,21 +222,25 @@
 
                     res = '<div class="live-search-icon" style="background-image: url(<?= base_url() . 'application/modules/database/assets/images/icons/'?>' + item.icon + '.png)">';
                     res += '<span class="bg">';
-                    res += '<a href="' + type + '/' + item.entry + '" class="q' + item.quality + '" data-' + type + '="' + type + '=' + item.entry + '" data-patch= 10><span>' + item.name + '</span><i>' + type + '</i></a>';
+                    res += '<a href="' + type + '/' + item.entry +  '/' + realm.id + '" class="q' + item.Quality + '" data-' + type + '="' + type + '=' + item.entry + '" data-patch=10><span>' + item.name + '</span><i>' + type + '</i></a>';
                     res += '</span></div>';
                     return res;
                 },
                 afterSelect: function (item) {
+                    console.log("we have afterSelect");
                     this.$element[0].value = item.name;
                     window.location.href = baseURL + '/' + type + '/' + item.entry
                 },
-                source: function (query, process) {
+                source: function (query, process) 
+                {
+                    console.log("Searching server with; " + query + " and realm: " + realm.value);
                     jQuery.ajax({
                         url: baseURL + "/api/v1/search/db",
-                        data: {q: query, p: <?= $patch ?>, <?= $this->security->get_csrf_token_name() ?> : csrf_token},
+                        data: {q: query, patch: realm,p: realm.value,realm: realm.value, <?= $this->security->get_csrf_token_name() ?>: csrf_token},
                         dataType: "json",
                         type: "POST",
-                        success: function (data) {
+                        success: function (data) 
+                        {
                             csrf_token = data.token
                             process(data.result)
                             TooltipExtended.initialize()

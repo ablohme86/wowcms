@@ -8,7 +8,7 @@
             <div class="uk-width-3-3@s">
                 <article class="uk-article">
                     <div class="uk-card uk-card-default uk-card-body uk-margin-small">
-                        <?= form_open('armory/result', array('id' => "searcharmoryForm", 'method' => "get")); ?>
+                        <?= form_open('armory/result', array('id' => "SearchArmoryForm", 'method' => "get")); ?>
                         <div class="uk-margin">
                             <div class="uk-form-controls uk-light">
                                 <div class="uk-inline uk-width-1-1">
@@ -21,8 +21,9 @@
                                             <td><select class="uk-inline uk-input minimal" style="display:inline;"
                                                         id="realm"
                                                         name="realm">
+														 <option value="ALL">All Realms</option>
                                                     <?php foreach ($realms as $realmInfo): ?>
-                                                        <option value="<?= $realmInfo->realmID ?>"><?= $this->wowrealm->getRealmName($realmInfo->realmID); ?></option>
+                                                        <option value="<?= $realmInfo->id ?>"><?= $this->wowrealm->getRealmName($realmInfo->id); ?></option>
                                                     <?php endforeach; ?>
                                                 </select></td>
                                         </tr>
@@ -39,6 +40,9 @@
     </div>
 </section>
 <script>
+
+// No idea why this code was included in here :o it doesnt do anything.... the <form> posting is done above :s
+
     function SearchArmoryForm(e) {
         e.preventDefault();
 
@@ -104,4 +108,5 @@
             }
         });
     }
+	
 </script>

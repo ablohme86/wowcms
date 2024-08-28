@@ -9,6 +9,27 @@ if (! defined('BASEPATH')) {
  *
  * @return string
  */
+ function qualityColor(int $quality): string
+ {
+     if ($quality === 0) {
+         return 'Gray';
+     } elseif ($quality === 1) {
+         return 'White';
+     } elseif ($quality === 2) {
+         return 'Lime';
+     } elseif ($quality === 3) {
+         return 'Blue';
+     } elseif ($quality === 4) {
+         return 'Purple';
+     } elseif ($quality === 5) {
+         return 'Orange';
+     } elseif ($quality === 6) {
+         return 'Eggwhite';
+     }
+ 
+     return 'Red'; // Hvis "unknown"
+ }
+ 
 function itemQuality(int $quality): string
 {
     if ($quality === 0) {
@@ -563,11 +584,11 @@ function getAllowableRace(int $mask): string
     }
 
     if ($mask == $mask_horde) {
-        return 'Orc, Undead, Tauren, Troll';
+        return 'Orc, Undead, Tauren, Troll, Blood Elf';
     }
 
     if ($mask == $mask_alliance) {
-        return 'Human, Dwarf, Night Elf, Gnome';
+        return 'Human, Dwarf, Night Elf, Gnome, Draenei';
     }
 
     $tmp  = [];

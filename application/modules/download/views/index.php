@@ -10,12 +10,8 @@
               <?php if ($this->wowmodule->getUCPStatus() == '1'): ?>
               <li><a href="<?= base_url('panel'); ?>"><i class="fas fa-user-circle"></i> <?= $this->lang->line('tab_account'); ?></a></li>
               <?php endif; ?>
-              <li class="uk-nav-divider"></li>
               <?php if ($this->wowmodule->getDonationStatus() == '1'): ?>
               <li><a href="<?= base_url('donate'); ?>"><i class="fas fa-hand-holding-usd"></i> <?=$this->lang->line('navbar_donate_panel'); ?></a></li>
-              <?php endif; ?>
-              <?php if ($this->wowmodule->getVoteStatus() == '1'): ?>
-              <li><a href="<?= base_url('vote'); ?>"><i class="fas fa-vote-yea"></i> <?=$this->lang->line('navbar_vote_panel'); ?></a></li>
               <?php endif; ?>
               <?php if ($this->wowmodule->getStoreStatus() == '1'): ?>
               <li><a href="<?= base_url('store'); ?>"><i class="fas fa-store"></i> <?=$this->lang->line('tab_store'); ?></a></li>
@@ -52,7 +48,7 @@
 											<table class="uk-table uk-table-middle uk-table-divider">
 												<thead>
 													<tr>
-														<th class="uk-width-small">Version</th>
+														<th  style="width: 60px">Version</th>
 														<th class="uk-width-medium">Name</th>
 														<th>Size</th>
 														<th>Type</th>
@@ -62,12 +58,13 @@
 												<tbody>
 													<?php foreach ($this->download_model->getGame()->result() as $files): ?>
 													<tr class="pg-td">
-														<td><div style="background:url(<?=base_url('assets/images/forums/wow-icons/' . $files->image);?>); width: 50px; height: 50px;)"></div></td>
+														<td><div style="background:url(<?=base_url('assets/images/forums/wow-icons/' . $files->image);?>); width: 50px;align:center; height: 50px;)"></div></td>
 														<td><?=$files->fileName?></td>
 														<td><?=$files->weight?></td>
 														<td><?=$files->type?></td>
 														<td><a class="uk-button uk-label-success uk-button-small" href="<?=$files->url?>" target="_blank"><i class="fas fa-download"></i> Download</a></td>
 													</tr>
+
 													<?php endforeach;?>
 												</tbody>
 											</table>
@@ -76,7 +73,7 @@
 											<table class="uk-table uk-table-middle uk-table-divider">
 												<thead>
 													<tr>
-														<th class="uk-width-small">Version</th>
+														<th style="width: 60px">Version</th>
 														<th class="uk-width-medium">Name</th>
 														<th>Size</th>
 														<th>Download</th>
@@ -95,6 +92,8 @@
 											</table>
 										</li>
 									</ul>
+										<p class="uk-text-center" style="margin-top: 2%; margin-bottom: 0px">All downloads are hosted on WoW-Ragnaros's unmetered and unlimited 1GB fiber connection in Norway!</p><p class="uk-text-center" style="margin: 0px;font-size: 12px; font-style: italic"> (No annyoing MegaShit Upload ads-poppin links here!)</p>
+
 								</div>
 							</div>
 						</div>

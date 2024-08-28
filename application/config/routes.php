@@ -194,6 +194,7 @@ $route[$lang . '/armory']                                 = 'armory';
 $route[$lang . '/armory/search']                          = 'armory/search';
 $route[$lang . '/armory/result']                          = 'armory/result';
 $route[$lang . '/armory/character/(:num)/(:num)']         = 'armory/character/$2/$3';
+
 $route[$lang . '/armory/character/(:num)/(:num)/(:num)?'] = 'armory/character/$2/$3/$4';
 $route[$lang . '/armory/guild/(:num)/(:num)']             = 'armory/guild/$2/$3';
 
@@ -220,8 +221,18 @@ $route[$lang . '/api/v1/tooltip/spell/(:num)']         = 'api_v1/tooltip_spell/$
 $route[$lang . '/api/v1/tooltip/spell/(:num)/(:num)?'] = 'api_v1/tooltip_spell/$2/$3';
 $route[$lang . '/api/v1/item/(:num)']                  = 'api_v1/item/$2';
 $route[$lang . '/api/v1/item/(:num)/(:num)?']          = 'api_v1/item/$2/$3';
-
 $route[$lang . '/api/v1/search/db']['POST'] = 'api_v1/search_db';
+$route[$lang . '/api/v1/search_itemsonly'] = 'api_v1/search_db_itemsonly';
+$route[$lang . '/api/v1/search_spellsonly'] = 'api_v1/search_db_spellsonly';
+
+
+/* 
+
+ Til min nye modul Character Manager
+*/
+
+$route[$lang . '/charman/(:num)/(:num)'] = 'charman/$1/$2'; // characterviewer/guid
+
 
 
 /*
@@ -263,6 +274,8 @@ $route[$lang . '/admin/accounts/(:num)']       = 'admin/accounts/$2';
 $route[$lang . '/admin/account/manage/(:num)'] = 'admin/accountmanage/$2';
 $route[$lang . '/admin/account/dlogs/(:num)']  = 'admin/accountdonatelogs/$2';
 $route[$lang . '/admin/account/update']        = 'admin/updateaccount';
+$route[$lang . '/admin/account/charview/(:num)/(:num)']        = 'admin/account/charview/$2';
+
 $route[$lang . '/admin/account/ban']           = 'admin/banaccount';
 $route[$lang . '/admin/account/unban']         = 'admin/unbanaccount';
 $route[$lang . '/admin/account/grantrank']     = 'admin/grantrankaccount';
@@ -338,6 +351,9 @@ $route[$lang . '/admin/pages/edit/(:num)'] = 'admin/editpage/$2';
 $route[$lang . '/admin/pages/add']         = 'admin/addpage';
 $route[$lang . '/admin/pages/update']      = 'admin/updatepage';
 $route[$lang . '/admin/pages/delete']      = 'admin/deletepage';
+
+
+
 
 /*
  *  Store
@@ -418,6 +434,7 @@ $route[$lang . '/admin/checksoap'] = 'admin/checkSoap';
 /*
  *  Timeline
 */
+$route[$lang . '/admin/game/sendmail']        = 'admin/character_sendmail';
 $route[$lang . '/admin/timeline']             = 'admin/manage_timeline';
 $route[$lang . '/admin/timeline/create']      = 'admin/create_timeline';
 $route[$lang . '/admin/timeline/edit/(:num)'] = 'admin/edit_timeline/$2';

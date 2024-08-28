@@ -120,7 +120,7 @@
                 <div class="uk-card uk-card-secondary">
                     <ul class="uk-nav uk-nav-default" uk-switcher="connect: #acc-characters">
                         <?php foreach ($this->wowrealm->getRealms()->result() as $realm) : ?>
-                            <li><a href="javascript:void(0)"><i class="fas fa-server"></i> <?= $this->wowrealm->getRealmName($realm->realmID); ?></a></li>
+                            <li><a href="javascript:void(0)"><i class="fas fa-server"></i> <?= $this->wowrealm->getRealmName($realm->id); ?></a></li>
                         <?php endforeach; ?>
                     </ul>
                 </div>
@@ -149,7 +149,7 @@
                                             <?php foreach ($this->wowrealm->getGeneralCharactersSpecifyAcc($multiRealm, $idlink)->result() as $chars) : ?>
                                                 <tr>
                                                     <td><?= $chars->guid ?></td>
-                                                    <td><?= $chars->name ?></td>
+                                                    <td><a href="<?= base_url($lang) ?>/admin/game/sendmail?realm=<?= $charsMultiRealm->id ?>&character=<?= $chars->name ?>"><?= $chars->name ?></td>
                                                     <td><img class="uk-border-rounded" src="<?= base_url('assets/images/races/' . $this->wowgeneral->getRaceIcon($chars->race)); ?>" width="24" height="24" title="<?= $this->wowgeneral->getRaceName($chars->race); ?>" alt="Race"></td>
                                                     <td><img class="uk-border-rounded" src="<?= base_url('assets/images/class/' . $this->wowgeneral->getClassIcon($chars->class)); ?>" width="24" height="24" title="<?= $this->wowgeneral->getClassName($chars->class); ?>" alt="Class"></td>
                                                     <td><?= $chars->level ?></td>

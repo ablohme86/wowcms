@@ -1,57 +1,109 @@
+<style>
+    .center_stuff {
+
+    display: flex;
+    justify-content: center; /* Sentrer horisontalt */
+
+align-items: center;     /* Sentrer vertikalt */
+}
+</style>
+
 <section class="uk-section uk-section-xsmall" data-uk-height-viewport="expand: true">
     <div class="uk-container">
         <div class="uk-grid uk-grid-small uk-margin-small" data-uk-grid>
             <div class="uk-width-expand uk-heading-line">
-                <h3 class="uk-h3"><i class="fas fa-timeline"></i> <?= $this->lang->line('admin_nav_timeline'); ?></h3>
+                <h3 class="uk-h3"><i class="fas fa-timeline"></i> Game Mailer</h3>
             </div>
             <div class="uk-width-auto">
                 <a href="<?= base_url('admin/timeline/create'); ?>" class="uk-icon-button"><i class="fas fa-plus"></i></a>
             </div>
         </div>
-        <div class="uk-card uk-card-default uk-card-body">
-            <div class="uk-overflow-auto">
-                <table class="uk-table uk-table-middle uk-table-divider uk-table-small">
-                    <thead>
-                    <tr>
-                        <th class="uk-table-shrink"><?= $this->lang->line('table_header_id'); ?></th>
-                        <th class="uk-width-small"><?= $this->lang->line('table_header_patch'); ?></th>
-                        <th class="uk-width-small"><?= $this->lang->line('table_header_name'); ?></th>
-                        <th class="uk-width-small"><?= $this->lang->line('table_header_date'); ?></th>
-                        <th class="uk-width-small"><?= $this->lang->line('table_header_order'); ?></th>
-                        <th class="uk-width-small"><?= $this->lang->line('table_header_image'); ?></th>
-                        <th class="uk-width-small uk-text-center"><?= $this->lang->line('table_header_actions'); ?></th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    <?php $timeline = $this->admin_model->getTimeline();
-                    if ($timeline):
-                        foreach ($this->admin_model->getTimeline() as $timeline_items): ?>
-                            <tr>
-                                <td><?= $timeline_items['id'] ?></td>
-                                <td><?= $timeline_items['patch'] ?></td>
-                                <td><?= strip_tags(truncateString(json_decode($timeline_items['description'], true)['description'])) ?>
-                                <td><?= $timeline_items['date'] ?></td>
-                                <td><?= $timeline_items['order'] ?></td>
-                                <td uk-lightbox="animation: fade">
-                                    <a href="/assets/images/timeline/<?= $timeline_items['image'] ?>" data-caption="Timeline Background"><img src="/assets/images/timeline/<?= $timeline_items['image'] ?>" alt="Timeline background" width="100px"></img></a>
-                                </td>
-                                <td>
-                                    <div class="uk-flex uk-flex-left uk-flex-center@m uk-margin-small">
-                                        <a href="<?= base_url('admin/timeline/edit/' . $timeline_items['id']); ?>" class="uk-button uk-button-primary uk-margin-small-right"><i class="fas fa-edit"></i></a>
-                                        <button class="uk-button uk-button-danger" value="<?= $timeline_items['id'] ?>" id="button_delete<?= $timeline_items['id'] ?>" onclick="DeleteDownload(event, this.value)"><i class="fas fa-trash-alt"></i></button>
-                                    </div>
-                                </td>
-                            </tr>
-                        <?php endforeach;
-                    else:?>
-                        <tr>
-                            <td class="uk-text-center" colspan="7">No Timeline Event Available..</td>
-                        </tr>
-                    <?php endif; ?>
-                    </tbody>
-                </table>
-            </div>
+        <div class="uk-card uk-card-default uk-card-body buffa">
+          
+
+<table  style="padding: 10px; margin: 10px">
+<tr>
+	<td>
+
+		  <table>
+
+			<tr>
+				<td>Realm:</td>
+				<td><select name="realm_sel" style="width: 200px">
+			                 <?php foreach ($this->wowrealm->getRealms()->result() as $charsMultiRealm) : ?>
+										<option value="<?= $charsMultiRealm->id ?>"><?= $this->wowrealm->getRealmName($charsMultiRealm->id) ?></option> 
+
+							 <?php endforeach; ?>
+
+
+
+				
+				</select>
+				</td>
+			</tr>
+			<tr>
+								<td>Character:</td>
+				<td>
+					<input type="text" style="width: 200px" name="searchChar" placeholder="Type in character name" value="<?=             $realm = $this->input->get('charname'); ?>">
+
+				</td>
+		  
+		  
+		  </tr>
+
+		
+
+		  
+		  <tr>
+
+		  								<td>Subject:</td>
+				<td>
+					<input type="text" style="width: 170px" name="searchChar" placeholder="From the Gods!" value="">
+
+				</td>
+		  
+		</tr>
+		  </table>
+	</td>
+	</tr>
+	<tr>
+	<td>
+<textarea style="width: 100%; height: 200px">
+
+
+
+Best regards from Game Master "insert here"!</textarea>
+
+		</td></tr>
+    
+    <tr>
+        
+        <td class="center_stuff">
+            <p style="margin: 0; margin-right: 10px">Gold</p><input type="text" name="golds" style="width: 30px">
+            <p style="margin: 0;margin-right: 10px;margin-left: 10px">Silver</p><input type="text" name="silvers" style="width: 30px">
+            <p style="margin: 0;margin-left: 10px"">Copper</p><input type="text" name="coppers" style="width: 30px">
+            
+        </td>
+    </tr>
+    <tr>
+        <td>
+            <hr style="margin: 0px">
+        </td>
+        
+    </tr>
+    <tr>
+        <td>
+           <list
+        </td>
+        
+    </tr>
+    </table>
+
+				  
+
+
         </div>
+		
     </div>
 </section>
 

@@ -137,7 +137,7 @@ $config['auth_source'] = 'ldap';
 | requests etc), set to TRUE;
 |
 */
-$config['allow_auth_and_keys'] = true;
+$config['allow_auth_and_keys'] = false;
 
 /*
 |--------------------------------------------------------------------------

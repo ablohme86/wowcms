@@ -1,3 +1,7 @@
+<?php
+
+?>
+
 <section class="uk-section uk-section-xsmall uk-padding-remove slider-section">
     <div class="uk-background-cover header-height header-section"
          style="background-image: url('<?= base_url() . 'application/themes/yesilcms/assets/images/headers/' . HEADER_IMAGES[array_rand(HEADER_IMAGES)] . '.jpg'; ?>')"></div>
@@ -10,7 +14,7 @@
               <?php if ($this->wowmodule->getUCPStatus() == '1'): ?>
               <li class="uk-active"><a href="<?= base_url('panel'); ?>"><i class="fas fa-user-circle"></i> <?= $this->lang->line('tab_account'); ?></a></li>
               <?php endif; ?>
-              <li class="uk-nav-divider"></li>
+
               <?php if ($this->wowmodule->getDonationStatus() == '1'): ?>
               <li><a href="<?= base_url('donate'); ?>"><i class="fas fa-hand-holding-usd"></i> <?=$this->lang->line('navbar_donate_panel'); ?></a></li>
               <?php endif; ?>
@@ -76,7 +80,7 @@
                       $multiRealm = $this->wowrealm->realmConnection($charsMultiRealm->username, $charsMultiRealm->password, $charsMultiRealm->hostname, $charsMultiRealm->char_database);
                       ?>
                   <div>
-                    <h5 class="uk-h5 uk-text-bold"><i class="fas fa-server"></i> <?= $this->wowrealm->getRealmName($charsMultiRealm->realmID); ?></h5>
+                    <h5 class="uk-h5 uk-text-bold"><i class="fas fa-server"></i> <?= $this->wowrealm->getRealmName($charsMultiRealm->id); ?></h5>
                     <div class="uk-overflow-auto uk-width-1-1 uk-margin-small">
                       <table class="uk-table uk-table-divider uk-table-small">
                         <thead>
@@ -97,7 +101,7 @@
                               <img class="uk-border-rounded" src="<?= base_url('assets/images/class/'.$this->wowgeneral->getClassIcon($chars->class)); ?>" width="20" height="20" title="<?= $this->wowgeneral->getClassName($chars->class); ?>" alt="">
                             </td>
                             <td><?= $chars->level ?></td>
-                            <td><?= secondsToTime($chars->played_time_total); ?></td>
+                            <td><?= secondsToTime($chars->totaltime); ?></td>
                             <td><?= $this->wowgeneral->moneyConversor($chars->money)['gold']; ?>g <?= $this->wowgeneral->moneyConversor($chars->money)['silver']; ?>s <?= $this->wowgeneral->moneyConversor($chars->money)['copper']; ?>c</td>
                           </tr>
                           <?php endforeach; ?>

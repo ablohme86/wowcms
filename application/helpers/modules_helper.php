@@ -484,16 +484,19 @@ function getPatchName($patch): string
  *
  * @return string
  */
-function showTooltip($id, $item_patch, $selected_patch, string $lang = 'en'): string
-{
-    if (empty($selected_patch) || $selected_patch === 10) {
-        return 'href="' . base_url() . $lang . '/item/' . $id . '"';
-    } elseif ($item_patch === 99) {
-        return 'class="tooltipLink" data-tooltip="This item does not exists in selected patch: ' . getPatchName($selected_patch) . '"';
-    } else {
-        return 'href="' . base_url() . $lang . '/item/' . $id . '-' . $item_patch . '"';
-    }
-}
+function showTooltip($id,$realmid, $item_patch = 10, string $lang = 'en'): string
+ {
+     //echo "SISTE ID ER ::: " . $realmid . " :::";
+     if (empty($selected_patch) || $selected_patch === 10) 
+	 {
+         return 'href="' . base_url() . $lang . '/item/' . $id . '/' . $realmid . '"';
+     } 
+
+	 else 
+	{
+         return 'href="' . base_url() . $lang . '/item/' . $id . '/' . $realmid . '"';
+     }
+ }
 
 /**
  * @param $patch
@@ -502,9 +505,6 @@ function showTooltip($id, $item_patch, $selected_patch, string $lang = 'en'): st
  */
 function dataPatch($patch): int
 {
-    if (! empty($patch) || strlen($patch) > 0) {
-        return (int)$patch;
-    }
 
     return 10;
 }

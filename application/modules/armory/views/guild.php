@@ -7,7 +7,7 @@
         <div class="uk-grid uk-grid-medium uk-margin-small" data-uk-grid>
             <div class="uk-width-3-3@s">
                 <article class="uk-article">
-                    <div class="uk-card uk-card-default uk-card-body uk-margin-small">
+                    <div class="uk-card uk-card-default uk-card-body uk-margin-small" style="align-text: center">
                         <?php
                         $currentRealm = $this->wowrealm->getRealmConnectionData($realmid);
          // Show 404 If realmID doesn't exists
@@ -15,8 +15,8 @@
              redirect(base_url('404'), 'refresh');
          }
          foreach ($this->armory_model->getGuildInfo($currentRealm, $guildid)->result() as $guild): ?>
-                            <h2 style="display:inline;"> <?= $guild->name ?> |</h2><b style="display:inline;">
-                                Message: </b><i style="display:inline;">"<?= $guild->motd ?>"</i>
+                            <center><h2 style="display:inline;"><b> &lt;<?= $guild->name ?>&gt;</b> of <?= $this->wowrealm->getRealmName($realmid) ?></h2><br><b style="display:inline;">
+                                Message: </b><i style="display:inline;">"<?= $guild->motd ?>"</i></center>
                             <hr>
                         <?php endforeach; ?>
                         <h2 class="uk-text-center">Members</h2>
@@ -32,10 +32,10 @@
                                 <tbody>
                                 <?php foreach ($this->armory_model->getGuildMembers($currentRealm, $guildid)->result() as $player): ?>
                                     <tr>
-                                        <td class="uk-text-center"><h3><a
+                                        <td class="uk-text-center"><a
                                                         href="<?= base_url() . 'armory/character/' . $realmid . '/' ?><?= $player->guid ?>"><?= $player->name ?></a>
-                                            </h3></td>
-                                        <td class="uk-text-center"><h3><?= $player->level ?></h3></td>
+                                            </td>
+                                        <td class="uk-text-center"><?= $player->level ?></td>
                                         <td class="uk-table-expand uk-text-center"><img align="center"
                                                                                         class="uk-border-circle"
                                                                                         src="<?= base_url() . 'application/modules/armory/assets/images/characters/' . getAvatar($player->class, $player->race, $player->gender, $player->level); ?>"

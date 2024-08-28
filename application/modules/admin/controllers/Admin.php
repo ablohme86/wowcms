@@ -21,7 +21,8 @@ class Admin extends MX_Controller
     {
         parent::__construct();
         $this->load->model('admin_model');
-        $this->load->model('update/update_model');
+		
+		$this->load->model('update/update_model');
         $this->config->load('donate/donate');
         $this->config->load('bugtracker/bugtracker');
         $this->load->library('pagination');
@@ -233,10 +234,31 @@ class Admin extends MX_Controller
 
         $this->template->build('account/accounts', $data);
     }
+    
+    public function charview($char_id,$realmid)
+    {
+        if (is_null($char_id) || empty($char_id)) 
+        {
+            redirect(base_url(), 'refresh');
+        }
+        if (is_null($realmid) || empty($realmid)) 
+        {
+            redirect(base_url(), 'refresh');
+        }  
+        $data = [
+            'pagetitle' => $this->lang->line('something'),
+            'character_id'    => $char_id,
+            'realm_id' => $realmid,
+            'lang'      => $this->lang->lang()
+        ];
+                
+        $this->template->build('account/charview', $data);  
+    }
 
     public function accountmanage($id)
     {
-        if (is_null($id) || empty($id)) {
+        if (is_null($id) || empty($id)) 
+        {
             redirect(base_url(), 'refresh');
         }
 
@@ -1612,6 +1634,16 @@ class Admin extends MX_Controller
         ];
 
         $this->template->build('timeline/manage_timeline', $data);
+    }
+
+	public function character_sendmail()
+    {
+        $data = [
+            'pagetitle' => $this->lang->line('button_admin_panel') . ' > ' . $this->lang->line('admin_nav_timeline'),
+            'lang'      => $this->lang->lang()
+        ];
+
+        $this->template->build('character_sendmail', $data);
     }
 
     public function create_timeline()

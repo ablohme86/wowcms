@@ -16,6 +16,7 @@ class User_model extends CI_Model
     {
         parent::__construct();
         $this->auth = $this->load->database('auth', true);
+        $this->auth_tbc = $this->load->database('auth_tbc',true);
     }
 
 
@@ -152,6 +153,16 @@ class User_model extends CI_Model
 
         return true;
     }
+    
+    private function registerUser($data)
+    {
+        if ($this->wowrealm->getRealms()->num_rows() > 0)
+         {
+             // Register to TBC aswell
+             $this->auth_tbc->insert('account', $data);
+         }
+         $this->auth->insert('account', $data);    
+    }
 
     /**
      * @param $username
@@ -191,8 +202,8 @@ class User_model extends CI_Model
                     'session_key_bnet' => null
                 ];
             endif;
+            $this->registerUser($data);
 
-            $this->auth->insert('account', $data);
         } elseif ($emulator == "hex") {
             $salt = strtoupper(bin2hex(random_bytes(32)));
 
@@ -205,7 +216,8 @@ class User_model extends CI_Model
                 'last_ip'   => '127.0.0.1'
             ];
 
-            $this->auth->insert('account', $data);
+            $this->registerUser($data);
+
         } elseif ($emulator == "old-trinity") {
             $data = [
                 'username'      => $username,
@@ -215,7 +227,8 @@ class User_model extends CI_Model
                 'sessionkey'    => '',
             ];
 
-            $this->auth->insert('account', $data);
+            $this->registerUser($data);
+
         }
 
         $id = $this->wowauth->getIDAccount($username);

@@ -72,18 +72,20 @@
                                 <div class="uk-card uk-card-default uk-card-body card-status">
                                     <div class="uk-grid uk-grid-small" data-uk-grid>
                                         <div class="uk-width-expand">
-                                            <h5 class="uk-h5 uk-text-bold uk-margin-small"><a href="<?= base_url('online'); ?>" class="uk-link-reset"><i class="fas fa-server"></i> <?= $this->lang->line('table_header_realm'); ?> <?= $this->wowrealm->getRealmName($charsMultiRealm->realmID); ?></a>
+                                            <h5 class="uk-h5 uk-text-bold uk-margin-small"><a href="<?= base_url('online'); ?>" class="uk-link-reset"><i class="fas fa-server"></i> <?= $this->lang->line('table_header_realm'); ?> <?= $this->wowrealm->getRealmName($charsMultiRealm->id); ?></a>
                                             </h5>
                                         </div>
                                         <div class="uk-width-auto">
-                                            <?php if ($this->wowrealm->RealmStatus($charsMultiRealm->realmID)) : ?>
+                                            <?php if ($this->wowrealm->RealmStatus($charsMultiRealm->id)) : ?>
                                                 <div class="status-dot online" uk-tooltip="<?= $this->lang->line('online'); ?>"><span><span></span></span></div>
                                             <?php else : ?>
                                                 <div class="status-dot offline" uk-tooltip="<?= $this->lang->line('offline'); ?>"><span><span></span></span></div>
                                             <?php endif ?>
                                         </div>
+
                                     </div>
-                                    <?php if ($this->wowrealm->RealmStatus($charsMultiRealm->realmID)) : ?>
+                                    
+                                    <?php if ($this->wowrealm->RealmStatus($charsMultiRealm->id)) : ?>
                                         <div class="uk-grid uk-grid-collapse uk-margin-small" data-uk-grid>
                                             <div class="uk-width-1-2">
                                                 <div class="uk-tile alliance-bar uk-text-center" uk-tooltip="<?= $this->lang->line('faction_alliance'); ?>">
@@ -98,6 +100,12 @@
                                                 </div>
                                             </div>
                                         </div>
+                                        <div class="uk-with-expand">
+                                                                                       
+                                            <a href="<?= base_url('realmlist'); ?>" title="Download Realmlist">
+                                                <i class="fas fa-file-arrow-down"></i> Get Realmlist <?= $this->config->item('realmlist'); ?>
+                                            </a>
+                                        </div>
                                     <?php else : ?>
                                         <p class="uk-text-small uk-margin-small"><i class="fas fa-exclamation-circle"></i> <?= $this->lang->line('home_realm_info'); ?> <span class="uk-text-danger uk-text-bold uk-text-uppercase"><?= $this->lang->line('offline'); ?></span></p>
                                     <?php endif ?>
@@ -105,19 +113,9 @@
                             </div>
                         <?php endforeach ?>
                     </div>
-                    <h4 class="uk-h4 uk-text-bold"><i class="fas fa-dungeon fa-sm"></i> <?= $this->lang->line('home_set_realmlist'); ?></h4>
-                    <h5 class="uk-h5 uk-text-center uk-margin">
-                        <?php if ($this->wowgeneral->getExpansionAction() == 1) : ?>
-                            <a href="<?= base_url('realmlist'); ?>" title="Download Realmlist">
-                                <i class="fas fa-file-arrow-down"></i> Set Realmlist <?= $this->config->item('realmlist'); ?>
-                            </a>
-                        <?php else : ?>
-                            <a href="<?= base_url('realmlist'); ?>" title="Download Realmlist">
-                                Set Portal "<?= $this->config->item('realmlist'); ?>"
-                            </a>
-                        <?php endif ?>
-                    </h5>
+                    
                 <?php endif ?>
+                
                 <?php if ($this->wowmodule->getDiscordStatus() == '1' && $this->config->item('discord_type') == '1') : ?>
                     <h4 class="uk-h4 uk-text-bold"><span uk-icon="icon: discord; ratio:1.2"></span> <?= $this->lang->line('home_discord'); ?></h4>
                     <div class="uk-text-center uk-margin-small">

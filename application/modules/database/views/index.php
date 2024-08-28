@@ -1,3 +1,7 @@
+<?php
+    $realms = $this->wowrealm->getRealms()->result();
+ ?>
+
 <link rel="stylesheet" href="<?= base_url() . 'application/modules/database/assets/css/database.css'; ?>"/>
 <section class="uk-section uk-section-xsmall uk-padding-remove slider-section">
     <div class="uk-background-cover header-height header-section"
@@ -21,25 +25,16 @@
                                                        name="search" type="text" minlength="3" autocomplete="off"
                                                        placeholder="Search Item & Spell by Name or ID" required>
                                             </td>
+                                            <td><select class="uk-inline uk-input minimal" style="display:inline;"
+                                                    id="realm"
+                                                    name="realm">
+                                     
+                                                <?php foreach ($realms as $realmInfo): ?>
+                                                    <option value="<?= $realmInfo->id ?>"><?= $this->wowrealm->getRealmName($realmInfo->id); ?></option>
+                                                <?php endforeach; ?>
+                                            </select></td>
                                             <?= form_close(); ?>
-                                            <td class="uk-width-1-4">
-                                                <?= form_open('', array('method' => "post")); ?>
-                                                <select name="globpatch" id="globpatch" class="uk-select" onchange="this.form.submit()">
-                                                    <option value="" selected disabled hidden><?= $patch === 10 ? 'Current Patch: ' . getPatchName($patch) . ' (Default)' : 'Current Patch: ' . getPatchName($patch) ?></option>
-                                                    <option value="0">1.2</option>
-                                                    <option value="1">1.3</option>
-                                                    <option value="2">1.4</option>
-                                                    <option value="3">1.5</option>
-                                                    <option value="4">1.6</option>
-                                                    <option value="5">1.7</option>
-                                                    <option value="6">1.8</option>
-                                                    <option value="7">1.9</option>
-                                                    <option value="8">1.10</option>
-                                                    <option value="9">1.11</option>
-                                                    <option value="10">1.12</option>
-                                                </select>
-                                                <?= form_close(); ?>
-                                            </td>
+                                          
                                         </tr>
                                     </table>
                                 </div>
@@ -56,6 +51,7 @@
 <script type="text/javascript" src="<?= base_url() . 'application/modules/database/assets/js/bootstrap3-typeahead.min.js'; ?>"></script>
 <script type="text/javascript" src="<?= base_url() . 'application/modules/database/assets/js/tooltip.js'; ?>"></script>
 <script>
+
     const baseURL = "<?= base_url($lang); ?>";
     const imgURL = "<?= base_url() . 'application/modules/database/assets/images/icons/'; ?>";
     let csrf_token = "<?= $this->security->get_csrf_hash() ?>";
@@ -80,19 +76,19 @@
 
                 res = '<div class="live-search-icon" style="background-image: url(<?= base_url() . 'application/modules/database/assets/images/icons/'?>' + item.icon + '.png)">';
                 res += '<span class="bg">';
-                res += '<a href="' + type + '/' + item.entry + '/' + <?= $patch ?> + '" class="q' + item.quality + '" data-' + type + '="' + type + '=' + item.entry + '" data-patch= <?= $patch ?>><span>' + item.name + '</span><i>' + type + '</i></a>';
+                res += '<a href="' + type + '/' + item.entry + '/' + realm + '" class="q' + item.quality + '" data-' + type + '="' + type + '=' + item.entry + '" data-patch= <?= $patch ?>><span>' + item.name + '</span><i>' + type + '</i></a>';
                 res += '</span></div>';
                 return res;
             },
             afterSelect: function (item) {
                 this.$element[0].value = item.name;
-                patch = <?= $patch ?>;
-                window.location.href = baseURL + '/' + type + '/' + item.entry + '/' + patch
+                realm = realm;
+                window.location.href = baseURL + '/' + type + '/' + item.entry + '/' + realm
             },
             source: function (query, process) {
                 jQuery.ajax({
                     url: baseURL + "/api/v1/search/db",
-                    data: {q: query, p: <?= $patch ?>, <?= $this->security->get_csrf_token_name() ?> : csrf_token},
+                    data: {q: query,p: realm, patch: realm, realm: realm, <?= $this->security->get_csrf_token_name() ?> : csrf_token},
                     dataType: "json",
                     type: "POST",
                     success: function (data) {

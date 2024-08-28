@@ -1,9 +1,18 @@
+
 <link rel="stylesheet" href="<?= base_url() . 'application/modules/database/assets/css/database.css'; ?>"/>
 <section class="uk-section uk-section-xsmall uk-padding-remove slider-section">
     <div class="uk-background-cover header-height header-section" style="background-image: url('<?= base_url() . 'application/themes/yesilcms/assets/images/headers/' . HEADER_IMAGES[array_rand(HEADER_IMAGES)] . '.jpg'; ?>')"></div>
 </section>
 <section class="uk-section uk-section-xsmall main-section" data-uk-height-viewport="expand: true">
     <div class="uk-container">
+	<?php 
+	
+		$realmname = $this->wowrealm->getRealmName($realmid);
+		
+		
+	
+	?>
+    
         <?php if ($item) : ?>
             <div class="text">
                 <h1><?= $item['name'] ?></h1>
@@ -28,12 +37,12 @@
                                         <table style="width: 100%;">
                                             <tbody>
                                             <tr>
-                                                <td><b class="q<?= $item['quality'] ?>"><?= $item['name'] ?></b><br/>
-                                                    <?php if ($item['item_level'] > 0) : ?>
-                                                        <span class="q">Item Level <?= $item['item_level'] ?> </span><br/>
+                                                <td><b class="q<?= $item['Quality'] ?>"><?= $item['name'] ?></b><br/>
+                                                    <?php if ($item['ItemLevel'] > 0) : ?>
+                                                        <span class="q">Item Level <?= $item['ItemLevel'] ?> </span><br/>
                                                     <?php endif; ?>
                                                     <?= $item['bonding'] > 0 ? itemBonding($item['bonding']) . '<br/>' : '' ?>
-                                                    <?= (! empty($item['max_count']) && strlen($item['max_count']) > 0) ? itemCount($item['max_count']) : '' ?>
+                                                    <?= (! empty($item['maxcount']) && strlen($item['maxcount']) > 0) ? itemCount($item['maxcount']) : '' ?>
                                                     <table style="width: 100%;">
                                                         <tbody>
                                                         <tr>
@@ -70,39 +79,39 @@
                                                             <span><?= $iresistance ?></span><br/>
                                                         <?php endforeach;
                                                     endif;
-                                                    if ($item['random_property']) : ?>
+                                                    if ($item['RandomProperty']) : ?>
                                                         <span class="q2">&lt;Random Enchantment&gt;</span><br/>
                                                     <?php endif;
-                                                    if ($item['max_durability']) : ?>
-                                                        Durability <?= $item['max_durability'] ?> / <?= $item['max_durability'] ?><br/>
+                                                    if ($item['MaxDurability']) : ?>
+                                                        Durability <?= $item['MaxDurability'] ?> / <?= $item['MaxDurability'] ?><br/>
                                                     <?php endif;
-                                                    if ($dur = $item['duration']) : ?>
+                                                    if ($dur = $item['Duration']) : ?>
                                                         Duration: <?= formatTime(abs($dur) * 1000) . ($item['rtduration'] ? ' (real time)' : '') ?><br/>
                                                     <?php endif;
-                                                    if ($item['start_quest'] > 1) : ?>
+                                                    if ($item['startquest'] > 1) : ?>
                                                         This Item Begins a Quest <br/>
                                                     <?php endif;
-                                                    if ($item['required_level'] > 1) : ?>
-                                                        Requires Level <?= $item['required_level'] ?> <br/>
+                                                    if ($item['RequiredLevel'] > 1) : ?>
+                                                        Requires Level <?= $item['RequiredLevel'] ?> <br/>
                                                     <?php endif;
-                                                    if ($item['required_spell'] > 0) : ?>
+                                                    if ($item['requiredspell'] > 0) : ?>
                                                         Requires <?= $item['req_spell'] ?><br/>
                                                     <?php endif;
-                                                    if ($item['required_skill'] > 0) : ?>
-                                                        <?= requiredSkill($item['required_skill'], $item['required_skill_rank']) ?><br/>
+                                                    if ($item['RequiredSkill'] > 0) : ?>
+                                                        <?= requiredSkill($item['RequiredSkill'], $item['RequiredSkillRank']) ?><br/>
                                                     <?php endif;
-                                                    if ($item['allowable_class'] > 0 && $item['allowed_classes']) : ?>
+                                                    if ($item['AllowableClass'] > 0 && $item['allowed_classes']) : ?>
                                                         Classes: <?= $item['allowed_classes'] ?> <br/>
                                                     <?php endif;
-                                                    if ($item['allowable_class'] > 0 && $item['allowed_races']) : ?>
+                                                    if ($item['AllowableClass'] > 0 && $item['allowed_races']) : ?>
                                                         Races: <?= $item['allowed_races'] ?> <br/>
                                                     <?php endif;
-                                                    if ($item['required_honor_rank']) : ?>
-                                                        <span class="q10">Requires <?= getRankByFaction($item['name'], $item['required_honor_rank']) ?> </span><br/>
+                                                    if ($item['requiredhonorrank']) : ?>
+                                                        <span class="q10">Requires <?= getRankByFaction($item['name'], $item['requiredhonorrank']) ?> </span><br/>
                                                     <?php endif;
-                                                    if ($item['required_reputation_faction']) : ?>
+                                                    if ($item['RequiredReputationFaction']) : ?>
                                                         <span class="q10">Requires <?= $item['req_fact_rep'] .
-                                                                                       ' - ' . getRepRank($item['required_reputation_rank']) ?> </span><br/>
+                                                                                       ' - ' . getRepRank($item['RequiredReputationFaction']) ?> </span><br/>
                                                     <?php endif;
                                                     if ($item['openable']) : ?>
                                                         <span class="q2">&lt;Right Click To Open&gt;</span><br/>
@@ -120,8 +129,8 @@
                                                         <td>
                                                             <?php foreach ($itemSpells as $key => $sid) : ?>
                                                                 <span class="q2"><?= $item['trigger_text'][$item['item_spells_trigger'][$sid][0]] ?> <a
-                                                                            href="<?= base_url($lang) ?>/spell/<?= $sid ?>" data-spell="spell=<?= $sid ?>"
-                                                                            data-patch='<?= dataPatch($patch) ?>'><?= $this->Database_model->getSpellDetails($sid, $patch) ?></a> <?= $item['item_spells_trigger'][$sid][1] ?></span>
+                                                                            href="<?= base_url($lang) ?>/spell/<?= $sid ?>/<?= $realmid ?>" data-realm='<?= $realmid ?>' data-spell="spell=<?= $sid ?>"
+                                                                            data-patch='<?= dataPatch($patch) ?>'><?= $this->Database_model->getSpellDetails($sid, $realmid) ?></a> <?= $item['item_spells_trigger'][$sid][1] ?></span>
                                                                 <br/>
                                                             <?php endforeach; ?>
                                                         </td>
@@ -130,21 +139,23 @@
                                                 <?php endif; ?>
                                             </table>
                                         <?php endif;
-                                        if ($item['set_id']) : ?>
+                                        if ($item['itemset']) : ?>
                                             <div id="tooltip-item-set" style="padding-top: 10px;">
                                                 <div class="q" id="tooltip-item-set-name"><?= $item['itemset_set_name'] ?> (<span id="tooltip-item-set-count">0</span>/<?= count($item['itemset_item_list']) ?>)</div>
                                                 <div id="tooltip-item-set-pieces" style="padding-left: .6em">
                                                     <div class="q0 indent">
                                                         <?php foreach ($item['itemset_item_list'] as $item_id => $piece) : ?>
-                                                            <span class="item-set-piece" data-item="item=<?= $item_id ?>" data-patch='<?= dataPatch($patch) ?>'> <a href="<?= base_url($lang) ?>/item/<?= $item_id ?>/<?= $patch ?>"><?= $piece ?></a> </span> <br/>
+                                                            <span class="item-set-piece" data-item="item=<?= $item_id ?>" data-realm='<?= $realmid ?>' data-patch='<?= dataPatch($patch) ?>'> <a href="<?= base_url($lang) ?>/item/<?= $item_id ?>/<?= $realmid ?>"><?= $piece ?></a> </span> <br/>
                                                         <?php endforeach; ?>
                                                     </div>
                                                 </div>
                                                 <div id="tooltip-item-set-bonuses" style="padding-top: 10px;">
                                                     <div class="q0">
                                                         <?php foreach ($item['itemset_set_list'] as $threshold => $set) : ?>
-                                                            <span class="item-set-bonus">(<?= $threshold ?>) Set: <a href="<?= base_url($lang) ?>/spell/<?= $set[1] ?>/<?= $patch ?>" data-spell="spell=<?= $set[1] ?>" data-patch='<?= dataPatch($patch) ?>'><span
+                                                            <span class="item-set-bonus">(<?= $threshold ?>) Set-bonus: <a href="<?= base_url($lang) ?>/spell/<?= $set[1] ?>/<?= $realmid ?>" data-spell="spell=<?= $set[1] ?>" data-realm='<?= $realmid ?>' data-patch='<?= 10 ?>'><span
                                                                             id="set-bonus-text"><?= $set[0] ?></span></a> </span> <br/>
+
+
                                                         <?php endforeach; ?>
                                                     </div>
                                                 </div>
@@ -174,42 +185,28 @@
                             <tr>
                                 <th>Quick Facts</th>
                             </tr>
-                            <tr>
-                                <td>Added in Patch: <?= $item['added_patch']; ?></td>
-                            </tr>
-                            <?php if (count($item['patch_list']) > 1) : ?>
-                                <tr>
-                                    <td>
-                                        Patch Versions:
-                                        <ul>
-                                            <?php foreach ($item['patch_list'] as $lpatch) : ?>
-                                                <li><a href="<?= base_url($lang) ?>/item/<?= $item['entry'] ?>/<?= $lpatch['patch'] ?>" data-item="item=<?= $item['entry'] ?>" data-patch='<?= dataPatch($lpatch['patch']) ?>'>Patch <?= getPatchName($lpatch['patch']) ?> </a></li>
-                                            <?php endforeach; ?>
-                                        </ul>
-                                    </td>
-                                </tr>
-                            <?php endif; ?>
+                     
                             <tr>
                                 <td>
                                     <div>
                                         <ul class="first last">
-                                            <?php if ($item['buy_price']) : ?>
+                                            <?php if ($item['BuyPrice']) : ?>
                                                 <li>
-                                                    <div>Item Level: <?= $item['item_level']; ?></div>
+                                                    <div>Item Level: <?= $item['ItemLevel']; ?></div>
                                                 </li>
                                             <?php endif; ?>
                                             <li>
                                                 <div>Icon: <a href="<?= base_url() . 'application/modules/database/assets/images/icons/' . $item['icon'] ?>.png" target="_blank"><span class="iconsmall"><ins
                                                                     class="yesilcms-lazy" style="background-image: url('<?= base_url() . 'application/modules/database/assets/images/icons/' . $item['icon'] ?>.png');"></ins><del></del></span><?= $item['icon'] ?></a></div>
                                             </li>
-                                            <?php if ($item['buy_price']) : ?>
+                                            <?php if ($item['BuyPrice']) : ?>
                                                 <li>
-                                                    <div> Buy for: <?= formatSellPrice($item['buy_price']) ?></div>
+                                                    <div> Buy for: <?= formatSellPrice($item['BuyPrice']) ?></div>
                                                 </li>
                                             <?php endif;
-                                            if ($item['sell_price']) : ?>
+                                            if ($item['SellPrice']) : ?>
                                                 <li>
-                                                    <div> Sells for: <?= formatSellPrice($item['sell_price']) ?></div>
+                                                    <div> Sells for: <?= formatSellPrice($item['SellPrice']) ?></div>
                                                 </li>
                                             <?php endif;
                                             if ($item['partyloot']) : ?>
@@ -217,12 +214,8 @@
                                                     <div><span class="static-tooltip" data-tooltip="When this item drops,&#013;&#010; each member of the group can loot one.">Party Loot</span></div>
                                                 </li>
                                             <?php endif;
-                                            if ($item['rtduration']) : ?>
-                                                <li>
-                                                    <div>Real Time Duration</div>
-                                                </li>
-                                            <?php endif;
-                                            if ($item['disenchant_id'] && $item['class'] != 0) : ?>
+                                          
+                                            if ($item['DisenchantID'] && $item['class'] != 0) : ?>
                                                 <li>
                                                     <div>Disenchantable</div>
                                                 </li>
@@ -298,6 +291,7 @@
                     <?php if ($item['creature_list']) :
                         foreach ($item['creature_list'] as $crt) :
                             if ($crt):?>
+                                
                                 <li>
                                     <div class="uk-overflow-auto uk-margin-small">
                                         <table class="uk-table uk-table-small uk-table-divider uk-table-hover uk-table-middle yesilcms-table">
@@ -314,13 +308,13 @@
                                             <tbody>
                                             <?php foreach ($crt as $drop) : ?>
                                                 <tr>
-                                                    <td><span class="q"><?= $drop['name'] ?></span></td>
-                                                    <td class="uk-text-center"><?= ($drop['level_max'] >= 63 ? '??' : ($drop['level_min'] == $drop['level_max'] ? $drop['level_max'] : $drop['level_min'] . ' - ' . $drop['level_max'])) ?></td>
-                                                    <td><?= $this->Database_model->getZoneName($drop['entry'] ?? -1, $drop['map'] ?? -1) ?></td>
-                                                    <td class="uk-text-center"><?= creatureRank($drop['rank']) ?></td>
+                                                    <td><span class="q"><?= $drop['Name'] ?></span></td>
+                                                    <td class="uk-text-center"><?= ($drop['MaxLevel'] >= 63 ? '??' : ($drop['MinLevel'] == $drop['MaxLevel'] ? $drop['MaxLevel'] : $drop['MinLevel'] . ' - ' . $drop['MaxLevel'])) ?></td>
+                                                    <!-- A Crash here in getZoneName (24 aug 24) --><td><?= $this->Database_model->getZoneName($drop['entry'] ?? -1, $drop['    '] ?? -1,$realmid) ?></td>
+                                                    <td class="uk-text-center"><?= creatureRank($drop['Rank']) ?></td>
                                                     <td class="uk-text-center"><?= formatPercentage($drop['percent']) ?></td>
                                                     <td class="uk-text-center"> <?php if ($drop['condition_id'] > 0) : ?>
-                                                            <span class="q2 uk-text-bold static-tooltip" data-tooltip="<?= $this->Database_model->describeCondition($this->Database_model->findConditionByID($drop['condition_id']), false) ?>"><?= $drop['condition_id'] ?></span>
+<span class="q2 uk-text-bold static-tooltip" data-tooltip="<?= $this->Database_model->describeCondition($this->Database_model->findConditionByID($drop['condition_id'],$realmid), false,$realmid) ?>"><?= $drop['condition_id'] ?></span>
                                                         <?php else: ?>
                                                             <span class="q0">n/a</span>
                                                         <?php endif; ?>
@@ -356,20 +350,20 @@
                                                 <tr>
                                                     <td style="min-width: 250px;">
                                                     <span class="iconmedium">
-                                                        <ins class="yesilcms-lazy" style="background-image: url('<?= base_url() . 'application/modules/database/assets/images/icons/' . $this->Database_model->getIconName($it['entry'], $patch) ?>.png');"></ins>
+                                                        <ins class="yesilcms-lazy" style="background-image: url('<?= base_url() . 'application/modules/database/assets/images/icons/' . $this->Database_model->getIconName($it['entry'], $realmid) ?>.png');"></ins>
                                                         <del></del>
                                                         <?php if ($it['maxcount'] > 1) : ?>
                                                             <span class="stackable stackable-sm"><?= $it['mincount'] ?><?= $it['maxcount'] > 1 ? ' - ' . $it['maxcount'] : '' ?></span>
                                                         <?php endif; ?>
                                                     </span>
-                                                        <a href="<?= base_url($lang) ?>/item/<?= $it['entry'] ?>/<?= $patch ?>" data-item="item=<?= $it['entry'] ?>" data-patch='<?= dataPatch($patch) ?>'><span class="q<?= $it['quality'] ?>"><?= $it['name'] ?></span></a>
+                                                        <a href="<?= base_url($lang) ?>/item/<?= $it['entry'] ?>/<?= $realmid ?>" data-item="item=<?= $it['entry'] ?>" data-realm="<?= $realmid ?>" data-patch='<?= dataPatch($patch) ?>'><span class="q<?= $it['Quality'] ?>"><?= $it['name'] ?></span></a>
                                                     </td>
-                                                    <td class="uk-text-center"><?= $it['item_level'] ?></td>
-                                                    <td class="uk-text-center"><?= (int)$it['required_level'] !== 0 ? $it['required_level'] : '<span class="q0">n/a</span>' ?></td>
+                                                    <td class="uk-text-center"><?= $it['ItemLevel'] ?></td>
+                                                    <td class="uk-text-center"><?= (int)$it['RequiredLevel'] !== 0 ? $it['RequiredLevel'] : '<span class="q0">n/a</span>' ?></td>
                                                     <td class="uk-text-center"><?= itemSubClass($it['class'], $it['subclass']) ?></td>
                                                     <td class="uk-text-center"><?= formatPercentage($it['percent']) ?></td>
                                                     <td class="uk-text-center"> <?php if ($it['condition_id'] > 0) : ?>
-                                                            <span class="q2 uk-text-bold static-tooltip" data-tooltip="<?= $this->Database_model->describeCondition($this->Database_model->findConditionByID($it['condition_id']), false) ?>"><?= $it['condition_id'] ?></span>
+                                                            <span class="q2 uk-text-bold static-tooltip" data-tooltip="<?= $this->Database_model->describeCondition($this->Database_model->findConditionByID($it['condition_id'],$realmid), false,$realmid) ?>"><?= $it['condition_id'] ?></span>
                                                         <?php else: ?>
                                                             <span class="q0">n/a</span>
                                                         <?php endif; ?>
@@ -402,11 +396,11 @@
                                             <?php foreach ($gobj as $obj) : ?>
                                                 <tr>
                                                     <td><span class="q"><?= $obj['name'] ?></span></td>
-                                                    <td class="uk-text-center"><?= $this->Database_model->getZoneName($obj['entry'], $obj['map'] ?? -1, 'gameobject') ?></td>
+                                                    <td class="uk-text-center"><?= $this->Database_model->getZoneName($obj['entry'], $obj['map'] ?? -1, $realmid,'gameobject') ?></td>
                                                     <td class="uk-text-center"><?= GOTypeByID($obj['type']) ?></td>
                                                     <td class="uk-text-center"><?= formatPercentage($obj['percent']) ?></td>
                                                     <td class="uk-text-center"> <?php if ($obj['condition_id'] > 0) : ?>
-                                                            <span class="q2 uk-text-bold static-tooltip" data-tooltip="<?= $this->Database_model->describeCondition($this->Database_model->findConditionByID($obj['condition_id']), false) ?>"><?= $obj['condition_id'] ?></span>
+                                                            <span class="q2 uk-text-bold static-tooltip" data-tooltip="<?= $this->Database_model->describeCondition($this->Database_model->findConditionByID($obj['condition_id'],$realmid), false,$realmid) ?>"><?= $obj['condition_id'] ?></span>
                                                         <?php else: ?>
                                                             <span class="q0">n/a</span>
                                                         <?php endif; ?>
@@ -478,7 +472,7 @@
                                                         <div class="iconsmall" style="float: left;">
                                                             <ins class="yesilcms-lazy" style="background-image: url('<?= base_url() . 'application/modules/database/assets/images/icons/' . $rew['icon'] ?>.png')"></ins>
                                                             <del></del>
-                                                            <a href="<?= base_url($lang) ?>/item/<?= $rew['entry'] ?>/<?= $patch ?>" data-item="item=<?= $rew['entry'] ?>" data-patch='<?= dataPatch($patch) ?>'></a>
+                                                            <a href="<?= base_url($lang) ?>/item/<?= $rew['entry'] ?>/<?= $realmid ?>" data-item="item=<?= $rew['entry'] ?>" data-realm='<?= $realmid ?>'></a>
                                                         </div>
                                                     </div>
                                                 <?php endforeach; ?>
@@ -513,8 +507,8 @@
                                             <td><span class="q"><?= $reward['Title'] ?></span></td>
                                             <td class="uk-text-center"><?= $reward['QuestLevel'] ?></td>
                                             <td class="uk-text-center"><?= $reward['MinLevel'] ?></td>
-                                            <td class="uk-text-center"><span class="q<?= $reward['quality'] ?>"><a href="<?= base_url($lang) ?>/item/<?= $reward['entry'] ?>/<?= $patch ?>"><?= $reward['name'] ?></a></span></td>
-                                            <td class="uk-text-center"><?= $reward['RewXP'] ?></td>
+                                            <td class="uk-text-center"><span class="q<?= $reward['quality'] ?>"><a href="<?= base_url($lang) ?>/item/<?= $reward['entry'] ?>/<?= $realmid ?>"><?= $reward['name'] ?></a></span></td>
+                                            <td class="uk-text-center"><?= $reward['RewMoneyMaxLevel'] ?></td>
                                             <td class="uk-text-center"><?= $reward['RewOrReqMoney'] > 0 ? formatSellPrice($reward['RewOrReqMoney']) : '<span class="q0">n/a</span>' ?></td>
                                         </tr>
                                     <?php endforeach; ?>
@@ -539,13 +533,13 @@
                                     <tbody>
                                     <?php foreach ($item['vendor_list'] as $vendor) : ?>
                                         <tr>
-                                            <td><span class="q"><?= $vendor['name'] ?></span>
-                                                <div class="small">&lt;<?= $vendor['subname'] ?>&gt;</div>
+                                            <td><span class="q"><?= $vendor['Name'] ?></span>
+                                                <div class="small">&lt;<?= $vendor['SubName'] ?>&gt;</div>
                                             </td>
-                                            <td class="uk-text-center"><?= $vendor['level_min'] ?></td>
-                                            <td><?= $this->Database_model->getZoneName($vendor['entry'], $vendor['map'] ?? -1) ?></td>
+                                            <td class="uk-text-center"><?= $vendor['MinLevel'] ?></td>
+                                            <td><?= $this->Database_model->getZoneName($vendor['Entry'], $vendor['map'] ?? -1,$realmid) ?></td>
                                             <td class="uk-text-center"><?= (int)$vendor['maxcount'] === 0 ? '∞' : $vendor['maxcount'] ?></td>
-                                            <td class="uk-text-center"><?= $vendor['buy_price'] > 0 ? formatSellPrice($vendor['buy_price']) : '<span class="q0">n/a</span>' ?></td>
+                                            <td class="uk-text-center"><?= $vendor['BuyPrice'] > 0 ? formatSellPrice($vendor['BuyPrice']) : '<span class="q0">n/a</span>' ?></td>
                                         </tr>
                                     <?php endforeach; ?>
                                     </tbody>
@@ -566,7 +560,7 @@
 <script type="text/javascript" src="<?= base_url() . 'application/modules/database/assets/js/tooltip.js'; ?>"></script>
 <script type="text/javascript" src="<?= base_url() . 'application/modules/database/assets/js/jquery.dataTables.min.js'; ?>"></script>
 <script type="text/javascript" src="<?= base_url() . 'application/modules/database/assets/js/dataTables.uikit.min.js'; ?>"></script>
-<script type="text/javascript" src="<?= base_url() . 'application/modules/timeline/assets/js/jquery.lazy.min.js'; ?>"></script>
+<script type="text/javascript" src="/jquery.lazy.min.js"></script> <!-- A. Blohme: For some reason the original path gave us access-denied so I had to move it for now under development! -->
 
 <script>
     const baseURL = "<?= base_url($lang); ?>";

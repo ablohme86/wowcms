@@ -1,14 +1,15 @@
 <?php
 /**
  * @var array   $character
- * @var integer $realmid
+ * @var integer $character['character_realm_id']
  * @var integer $id
  * @var integer $patch
  * @var string  $lang
  * @var string  $currentRealmName
  * @var array   $slots
+ 
  */
-
+//print_r($character['equipped_item_ids']);
 ?>
 <link rel="stylesheet" href="<?= base_url() . 'application/modules/armory/assets/css/armory.css'; ?>"/>
 <link rel="stylesheet" href="<?= base_url() . 'application/modules/database/assets/css/database.css'; ?>"/>
@@ -31,7 +32,7 @@
                                     <a class="cp-header-name color-c<?= $character['class'] ?>" href="<?= $_SERVER['REQUEST_URI'] ?>"><?= $character['name'] ?></a>
                                     <div class="cp-header-title cp-header-suffix">
                                         <?php if (! empty($character['guild_id'])) : ?>
-                                        <a class="cs-guild " href="<?= base_url() . 'armory/guild/' . $realmid . '/' . $character['guild_id'] ?>">
+                                        <a class="cs-guild " href="<?= base_url() . 'armory/guild/' . $character['character_realm_id'] . '/' . $character['guild_id'] ?>">
                                             <?php endif; ?>
                                             &#10094; <?= $character['guild_name'] ?>
                                             &#10095;</a>
@@ -75,25 +76,15 @@
                                     </select>
                                 </div>
                                 <div>
-                                    <select name="patch" id="patch" class="uk-select uk-form-small patch-select model-btn-<?= strtolower($character['faction']) ?>" onchange="this.form.submit()">
-                                        <option value="" selected disabled hidden><?= (! empty($patch) || strlen($patch) > 0) ? 'Current Patch: ' . getPatchName($patch) : 'Choose Patch (Default: 1.12)' ?></option>
-                                        <option value="0">1.2</option>
-                                        <option value="1">1.3</option>
-                                        <option value="2">1.4</option>
-                                        <option value="3">1.5</option>
-                                        <option value="4">1.6</option>
-                                        <option value="5">1.7</option>
-                                        <option value="6">1.8</option>
-                                        <option value="7">1.9</option>
-                                        <option value="8">1.10</option>
-                                        <option value="9">1.11</option>
-                                        <option value="10">1.12</option>
+                                    <select name="patch" id="patch" class="uk-select uk-form-small patch-select model-btn-<?= strtolower($character['faction']) ?>">
+                                        <option value="" selected disabled hidden>The Burning Cursade</option>
+               
                                     </select>
                                 </div>
                                 <script>
                                     $(document).ready(function () {
                                         $('#patch').change(function () {
-                                            window.location.href = '<?= base_url($lang . '/armory/character/' . $realmid . '/' . $id); ?>' + '/' + encodeURIComponent($(this).val());
+                                            window.location.href = '<?= base_url($lang . '/armory/character/' . $character['character_realm_id'] . '/' . $id); ?>' + '/' + encodeURIComponent($(this).val());
                                         });
                                     });
                                 </script>
@@ -102,8 +93,10 @@
                         <div class="cp-gear cp-gear-left">
                             <?php foreach ($slots['L'] as $slot) : ?>
                                 <div class="cp-item">
-                                    <?php if (isset($character['equipped_items'][$slot])) : ?>
-                                        <a <?= showTooltip($character['equipped_items'][$slot]['item_id'], ($character['equipped_items'][$slot]['item_patch'] ?? 99), $patch, $lang) ?> data-item='item=<?= $character['equipped_items'][$slot]['item_id'] ?>' data-patch='<?= dataPatch($patch, $lang) ?>'
+                                
+									<?php if (isset($character['equipped_items'][$slot])) : ?>
+								
+                                        <a <?= showTooltip($character['equipped_items'][$slot]['item'],  $character['character_realm_id'], $patch, $lang) ?> data-item='item=<?= $character['equipped_items'][$slot]['item'] ?>' data-patch='<?= dataPatch($character['character_realm_id'], $lang) ?>'
                                                                                                                                                                                         data-item-slot='<?= $character['equipped_items'][$slot]['item_slot_id'] ?>' data-realm='1' role="button"
                                                                                                                                                                                         target="_blank"
                                                                                                                                                                                         class="ControlledModalToggle">
@@ -123,7 +116,7 @@
                             <?php foreach ($slots['R'] as $slot) : ?>
                                 <div class="cp-item">
                                     <?php if (isset($character['equipped_items'][$slot])) : ?>
-                                        <a <?= showTooltip($character['equipped_items'][$slot]['item_id'], ($character['equipped_items'][$slot]['item_patch'] ?? 99), $patch, $lang) ?> data-item='item=<?= $character['equipped_items'][$slot]['item_id'] ?>' data-patch='<?= dataPatch($patch, $lang) ?>'
+                                        <a <?= showTooltip($character['equipped_items'][$slot]['item'], $character['character_realm_id'], $patch, $lang) ?> data-item='item=<?= $character['equipped_items'][$slot]['item'] ?>' data-patch='<?= dataPatch($character['character_realm_id'], $lang) ?>'
                                                                                                                                                                                         data-item-slot='<?= $character['equipped_items'][$slot]['item_slot_id'] ?>' data-realm='1' role="button"
                                                                                                                                                                                         target="_blank"
                                                                                                                                                                                         class="ControlledModalToggle">
@@ -143,7 +136,7 @@
                             <?php foreach ($slots['B'] as $slot) : ?>
                                 <div class="cp-item">
                                     <?php if (isset($character['equipped_items'][$slot])) : ?>
-                                        <a <?= showTooltip($character['equipped_items'][$slot]['item_id'], ($character['equipped_items'][$slot]['item_patch'] ?? 99), $patch, $lang) ?> data-item='item=<?= $character['equipped_items'][$slot]['item_id'] ?>' data-patch='<?= dataPatch($patch, $lang) ?>'
+                                        <a <?= showTooltip($character['equipped_items'][$slot]['item'], $character['character_realm_id'], $lang) ?> data-item='item=<?= $character['equipped_items'][$slot]['item'] ?>' data-patch='<?= dataPatch($character['character_realm_id'], $lang) ?>'
                                                                                                                                                                                         data-item-slot='<?= $character['equipped_items'][$slot]['item_slot_id'] ?>' data-realm='1' role="button"
                                                                                                                                                                                         target="_blank"
                                                                                                                                                                                         class="ControlledModalToggle">
@@ -346,12 +339,6 @@
     const tooltipCharData = <?= json_encode($character['enchanted_items'] ?? [], JSON_NUMERIC_CHECK) ?>;
     const character = {
         "race": <?= $character['race'] ?>,
-        "gender": <?= $character['gender'] ?>,
-        "skin": <?= $character['skin'] ?>,
-        "face": <?= $character['face'] ?>,
-        "hairStyle": <?= $character['hair_style'] ?>,
-        "hairColor": <?= $character['hair_color'] ?>,
-        "facialStyle": <?= $character['facial_hair'] ?>,
         "items": <?= count($character['equipped_item_ids']) === 0
             ? '[]' . PHP_EOL
             : json_encode(

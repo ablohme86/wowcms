@@ -78,7 +78,7 @@ $config['url_suffix'] = '';
 | than english.
 |
 */
-$config['language'] = '%LANGUAGE%';
+$config['language'] = 'english';
 
 /*
 |--------------------------------------------------------------------------
@@ -313,11 +313,11 @@ $config['cache_path'] = '';
 |	             of query parameters.
 |
 */
-$config['cache_query_string'] = true;
+$config['cache_query_string'] = false;
 
 /*
 |--------------------------------------------------------------------------
-| Encryption Key
+| Encfalseyption Key
 |--------------------------------------------------------------------------
 |
 | If you use the Encryption class, you must set an encryption key.
@@ -405,7 +405,7 @@ $config['sess_regenerate_destroy'] = false;
 $config['cookie_prefix']   = '';
 $config['cookie_domain']   = '';
 $config['cookie_path']     = '/';
-$config['cookie_secure']   = '%COOKIE%';
+$config['cookie_secure']   = false;
 $config['cookie_httponly'] = false;
 
 /*

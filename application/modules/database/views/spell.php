@@ -6,7 +6,7 @@
     <div class="uk-container">
         <?php if ($spell) : ?>
             <div class="text">
-                <h1><?= $spell['name'] ?></h1>
+                <h1><?= $spell['SpellName'] ?></h1>
             </div>
             <div class="uk-text-left" uk-grid>
                 <div class="uk-width-auto@m">
@@ -21,15 +21,15 @@
                             <table>
                                 <tr>
                                     <td>
-                                        <?php if ($spell['nameSubtext']) : ?>
+                                        <?php if ($spell['Rank1']) : ?>
                                             <table style="width: 100%;">
                                                 <tr>
-                                                    <td><b><?= $spell['name'] ?></b></td>
-                                                    <th><b class="q0"><?= $spell['nameSubtext'] ?></b></th>
+                                                    <td><b><?= $spell['SpellName'] ?></b></td>
+                                                    <th><b class="q0"><?= $spell['Rank1'] ?></b></th>
                                                 </tr>
                                             </table>
                                         <?php else: ?>
-                                            <b><?= $spell['name'] ?></b><br/>
+                                            <b><?= $spell['SpellName'] ?></b><br/>
                                         <?php endif;
                                         if ($spell['cost'] && $spell['range']) : ?>
                                             <table style="width: 100%;">
@@ -166,28 +166,14 @@
                             <tr>
                                 <th>Quick Facts</th>
                             </tr>
-                            <tr>
-                                <td>Added in Build: <?= $spell['added_build']; ?></td>
-                            </tr>
-                            <?php if (count($spell['build_list']) > 1) : ?>
-                                <tr>
-                                    <td>
-                                        Build Versions:
-                                        <ul>
-                                            <?php foreach ($spell['build_list'] as $sbuild) : ?>
-                                                <li><a href="<?= base_url($lang) ?>/spell/<?= $spell['entry'] ?>/<?= buildToPatch($sbuild['build']) ?>" data-spell="spell=<?= $spell['entry'] ?>" data-patch='<?= buildToPatch($sbuild['build']) ?>'>Build <?= $sbuild['build'] ?> </a></li>
-                                            <?php endforeach; ?>
-                                        </ul>
-                                    </td>
-                                </tr>
-                            <?php endif; ?>
+                           
                             <tr>
                                 <td>
                                     <div>
                                         <ul class="first last">
-                                            <?php if ($spell['baseLevel']) : ?>
+                                            <?php if ($spell['BaseLevel']) : ?>
                                                 <li>
-                                                    <div>Requires Level <?= $spell['baseLevel']; ?></div>
+                                                    <div>Requires Level <?= $spell['BaseLevel']; ?></div>
                                                 </li>
                                             <?php endif; ?>
                                             <li>
@@ -239,11 +225,11 @@
                                     </tr>
                                     <tr>
                                         <th style="border-bottom: 0; border-left: 0">Spell category</th>
-                                        <td style="border-bottom: 0"><?= tableText($spell['cat'], true, '(' . $spell['category'] . ')') ?></td>
+                                        <td style="border-bottom: 0"><?= tableText($spell['cat'], true, '(' . $spell['Category'] . ')') ?></td>
                                     </tr>
                                     <tr>
                                         <th style="border-bottom: 0; border-left: 0">GCD category</th>
-                                        <td style="border-bottom: 0"><?= tableText($spell['gcd_cat'], true, '(' . $spell['startRecoveryCategory'] . ')') ?></td>
+                                        <td style="border-bottom: 0"><?= tableText($spell['gcd_cat'], true, '(' . $spell['StartRecoveryCategory'] . ')') ?></td>
                                     </tr>
                                     </tbody>
                                 </table>
@@ -276,8 +262,8 @@
                                     <th>Effect #<?= $key + 1 ?></th>
                                     <td colspan="3">
                                         <?php if ($eff) : //default, if none exists?>
-                                            (<?= $spell['effect' . ($key + 1)] ?>) <?= $eff['eff_name'] ?><?= (int)$spell['effect' . ($key + 1)] === 6 ? ' #' . $eff['a_id'] . ':' : ($eff['type'] === 1 ? '<span class="q2">' . $eff['value'] . '</span>' : '') ?>
-                                            <?php if ((int)$spell['effect' . ($key + 1)] === 6) : // aura ?>
+                                            (<?= $spell['Effect' . ($key + 1)] ?>) <?= $eff['eff_name'] ?><?= (int)$spell['Effect' . ($key + 1)] === 6 ? ' #' . $eff['a_id'] . ':' : ($eff['type'] === 1 ? '<span class="q2">' . $eff['value'] . '</span>' : '') ?>
+                                            <?php if ((int)$spell['Effect' . ($key + 1)] === 6) : // aura ?>
                                                 <?= $eff['a_name'] ?> <?= ($eff['eff_val'] ? '(' . $eff['eff_val'] . ')' : '') ?>
                                             <?php endif; ?>
                                             <?php if ($eff['type'] === 3) : //trigger ?>
@@ -372,12 +358,12 @@
                                 <?php /*endif;*/ ?>
                             <?php endforeach; ?>
                         <?php endif; ?>
-                        <?php if ($spell['flags']) : ?>
+                        <?php if ($spell['Flags']) : ?>
                             <tr>
                                 <th>Flags</th>
                                 <td colspan="3" style="line-height:17px">
                                     <ul style="margin:0">
-                                        <?php foreach ($spell['flags'] as $flag) : ?>
+                                        <?php foreach ($spell['Flags'] as $flag) : ?>
                                             <li><span class="q"><?= $flag ?></span></li>
                                         <?php endforeach; ?>
                                     </ul>
