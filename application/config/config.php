@@ -225,7 +225,7 @@ $config['allow_get_array'] = true;
 | your log files will fill up very fast.
 |
 */
-$config['log_threshold'] = 0;
+$config['log_threshold'] = 4;
 
 /*
 |--------------------------------------------------------------------------
@@ -454,7 +454,7 @@ $config['csrf_protection']   = true;
 $config['csrf_token_name']   = 'csrf_yesilcms_token';
 $config['csrf_cookie_name']  = 'csrf_yesilcms_cookie';
 $config['csrf_expire']       = 7200;
-$config['csrf_regenerate']   = true;
+$config['csrf_regenerate']   = false;
 $config['csrf_exclude_uris'] = array();
 // ### to Exclude API requests use this line instead of above.
 // $config['csrf_exclude_uris'] = array('^[a-z]{2}\/api\/v1/.*+$');

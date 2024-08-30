@@ -224,6 +224,10 @@ $route[$lang . '/api/v1/item/(:num)/(:num)?']          = 'api_v1/item/$2/$3';
 $route[$lang . '/api/v1/search/db']['POST'] = 'api_v1/search_db';
 $route[$lang . '/api/v1/search_itemsonly'] = 'api_v1/search_db_itemsonly';
 $route[$lang . '/api/v1/search_spellsonly'] = 'api_v1/search_db_spellsonly';
+$route[$lang . '/api/v1/realm/(:num)']          = 'api_v1/realminfo/$2';
+$route[$lang . '/api/v1/realm/(:num)/characters/search/(:any)']          = 'api_v1/charsearch/$2/$3';
+$route[$lang . '/api/v1/mailman/send']['POST']        = 'api_v1/mailman_send';
+
 
 
 /* 
@@ -280,6 +284,13 @@ $route[$lang . '/admin/account/ban']           = 'admin/banaccount';
 $route[$lang . '/admin/account/unban']         = 'admin/unbanaccount';
 $route[$lang . '/admin/account/grantrank']     = 'admin/grantrankaccount';
 $route[$lang . '/admin/account/delrank']       = 'admin/delrankaccount';
+
+/*
+ * Admin In-Game Tools
+ */
+ $route[$lang . '/admin/game/sendmail_page']        = 'admin/sendmail_page';
+
+
 
 /*
  *	Tickets
@@ -434,7 +445,7 @@ $route[$lang . '/admin/checksoap'] = 'admin/checkSoap';
 /*
  *  Timeline
 */
-$route[$lang . '/admin/game/sendmail']        = 'admin/character_sendmail';
+
 $route[$lang . '/admin/timeline']             = 'admin/manage_timeline';
 $route[$lang . '/admin/timeline/create']      = 'admin/create_timeline';
 $route[$lang . '/admin/timeline/edit/(:num)'] = 'admin/edit_timeline/$2';

@@ -302,6 +302,8 @@ class Admin extends MX_Controller
         echo $this->admin_model->updateAccountData($id, $dp, $vp);
     }
 
+
+
     public function banaccount()
     {
         $id     = $this->input->post('id');
@@ -1636,16 +1638,25 @@ class Admin extends MX_Controller
         $this->template->build('timeline/manage_timeline', $data);
     }
 
-	public function character_sendmail()
+	public function sendmail_page()
     {
         $data = [
             'pagetitle' => $this->lang->line('button_admin_panel') . ' > ' . $this->lang->line('admin_nav_timeline'),
             'lang'      => $this->lang->lang()
         ];
+        
+        $toCharacter = $this->input->get('character');
+        $atRealm = $this->input->get('realm');
 
-        $this->template->build('character_sendmail', $data);
+        $this->template->build('game/sendmail_page', $data);
     }
-
+   
+    public function get_expansion()
+    {
+        $realm_id = $this->input->post('realm_id');
+        return $this->wowrealm->expansion($realm_id);
+    }
+    
     public function create_timeline()
     {
         $data = [

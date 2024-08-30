@@ -5,6 +5,7 @@ defined('BASEPATH') or exit('No direct script access allowed');
 $active_group  = 'default';
 $query_builder = true;
 
+
 $db['default'] = [
     'dsn'          => '',
     'hostname'     => 'localhost',
@@ -27,8 +28,7 @@ $db['default'] = [
     'save_queries' => true
 ];
 
-
-
+// 30.08.24, A. BLOHMÈ: These will be all implemented into db later on:
 // Classic Realmd
 $db['auth'] = [
     'dsn'          => '',

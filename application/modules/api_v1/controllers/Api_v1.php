@@ -11,8 +11,7 @@ $development = false;
  * @property Armory_model   $armory_model
  * @property Database_model $Database_model
  */
-class Api_v1 extends
-    REST_Controller
+class Api_v1 extends REST_Controller
 {
 
     public function __construct()
@@ -81,6 +80,78 @@ class Api_v1 extends
     }
 
 
+	public function realminfo_get(int $realmid)
+	{
+	   $exp = $this->wowrealm->getRealmInformation($realmid,true);
+	   echo json_encode($exp);
+
+	   
+	}
+	public function charsearch_get( $realmid, $charsearch)
+	{
+
+		if ($this->wowrealm->getRealmInformation($realmid) != false) 
+		{
+		 echo json_encode(	$data_table = $this->Database_model->searchForCharacter($charsearch,$realmid));
+		}
+		else
+		{
+			return false;
+		}
+
+	}
+	
+	public function mailman_send_post()
+	{	
+
+		   $data = [ 
+
+				'realm_id' => $this->input->post('realm_id'),
+				'message' => $this->input->post('message'),
+				'playername' => $this->input->post('recipient'),
+				'itemlist' => $this->input->post('items'),
+				'gold' => $this->input->post('gold'),
+				'silver' => $this->input->post('silver'),
+				'copper' => $this->input->post('copper')
+			];
+         
+            // Dette nedenfor skal etterhvert flyttes over til en egen module kalt "ingame-services" eller noe iden duren..
+
+			$this->load->model('Database/Database_model');
+
+                     
+			$charSearch = $this->Database_model->searchForCharacter($data['playername'],$data['realm_id']);
+			if (!$charSearch) 
+			{
+				header("HTTP/1.1 404 Character does not exist on this realm!");
+				return false;
+			}
+            $command = "send mail sjallabais hello hell";
+            $soapConnectionInfo = $this->wowrealm->getRealm($data['realm_id'])->result();
+            
+           $client = new SoapClient(NULL,
+           array(
+               "location" => "http://".$soapConnectionInfo[0]->console_hostname.":".$soapConnectionInfo[0]->console_port."/",
+               "uri" => "urn:".$soapConnectionInfo[0]->emulator,
+               "style" => SOAP_RPC,
+               'login' => $soapConnectionInfo[0]->console_username,
+               'password' => $soapConnectionInfo[0]->console_password
+           ));
+           
+           try {
+               $result = $client->executeCommand(new SoapParam($command, "command"));
+           
+               echo $result;
+               return;
+           }
+           catch (Exception $e)
+           {
+            header("HTTP/1.1 404 Cannot connect to realm: ".$e->getMessage());
+               
+           }
+            
+			// Lets do a SOAP check! (Dont drop it!)
+		}
 
 
 	// for the rest API item get

@@ -37,18 +37,13 @@ class Realm_model extends CI_Model
      *
      * @return CI_DB_result
      */
-    public function getRealm($actual_keyid): CI_DB_result	// Den eneste som faktisk gir 'id' av realms i cms db
-    {
-   		$realm = $this->db->select('*')->where('id', $actual_keyid)->get('realms');
-	//	printf("Trying to getRealm on id: %d", $actual_keyid);
-        return $realm; 
-    }
+
 
 
 	// added by: A. Blohme
 	public function getServersRealmID($id)
 	{
-		// A. Blohme: Why does this just return 0 on realmID?? $id is correct.. Fix tomorrow from here !!!
+		// *FIXED?* A. Blohme: Why does this just return 0 on realmID?? $id is correct.. Fix tomorrow from here !!!
      	$result = $this->cms_db->select('realmID')->where('id', $id)->get('realms')->row('realmID');		
      	
      	return $result;
@@ -68,6 +63,13 @@ class Realm_model extends CI_Model
      	$result = $this->cms_db->select('*')->where('id', $keyid)->get('realms')->row('expansion');     	
      	return $result;
      }
+ 
+ public function expansion($keyid)
+   {
+ 
+      $result = $this->cms_db->select('*')->where('id', $keyid)->get('realms')->row('expansion');     	
+      return $result;
+   }
      
     public function getRealmPort($id)	// denne gir bare 'realmID' da denne henter direkte fra wow realmd datasen
     {
@@ -118,6 +120,8 @@ class Realm_model extends CI_Model
      *
      * @return bool|object
      */
+
+	 // Vi må bytte ut dette fæle forvirrende navnet til "getRealmsCharDB_Data" eller noe i framtia, og så lage andre som: getRealmWorldDB_Data osv osv
     public function getRealmConnectionData($id)
     {
 //		printf("getRealConnectionData: %d", $id);
@@ -130,9 +134,8 @@ class Realm_model extends CI_Model
                 $data['password'],
                 $data['hostname'],
                 $data['char_database'],
-                $data['expansion'],
-                $data['id'],
-                $data['realmID']
+                $data['id']
+                
             );
             		//print_r($ret_data);
             return $ret_data;
@@ -140,6 +143,34 @@ class Realm_model extends CI_Model
 
         return false;
     }
+    public function getRealm($actual_keyid,$sensitive = false): CI_DB_result	// 30.aug.24; la til $sensitive slik at vi ikke sender passord og hele sulamitten ved public henting av realm data i APIet (se realminfo_get i Api)
+     {
+        if ($sensitive == false)
+        {
+          $realm = $this->db->select('*')->where('id', $actual_keyid)->get('realms');          
+        }
+        else
+        {
+           $realm = $this->db->select('id,realmID,emulator,expansion')->where('id', $actual_keyid)->get('realms');          
+    
+        }
+    //	printf("Trying to getRealm on id: %d", $actual_keyid);
+         return $realm; 
+     }
+     
+    public function getRealmInformation($id, $sensitive = false)
+        {
+    //		printf("getRealConnectionData: %d", $id);
+            $data = $this->getRealm($id,$sensitive)->limit(1);
+    
+            if ($data > 0) {
+               
+                      //print_r($ret_data);
+                return $data;
+            }
+    
+            return false;
+        }
 
     /**
      * @param $username
@@ -570,7 +601,7 @@ class Realm_model extends CI_Model
         );
 
         if (is_soap_fault($this->client)) {
-            return 'Soap not found';
+            return false;
         }
 
         return $this->client;

@@ -110,6 +110,8 @@ class Admin_model extends CI_Model
 
         return true;
     }
+    
+    
 
     public function insertBanAccount($iduser, $reason): bool
     {
@@ -194,15 +196,12 @@ class Admin_model extends CI_Model
             $delete = false;
         }
 
-        $delete
-            ? $this->auth->where('id', $id)->delete('account_access')
-            : $this->auth->where('id', $id)->update(
-            'account',
-            $data
-        );
+        $delete ? $this->auth->where('id', $id)->delete('account_access') : $this->auth->where('id', $id)->update('account',$data);
 
         return true;
     }
+
+
 
     public function getBanCount()
     {

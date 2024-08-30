@@ -3,12 +3,19 @@
 defined('BASEPATH') or exit('No direct script access allowed');
 
 /*Notification Title Lang*/
+$lang['notification_title_great_success'] = 'Great Success!';
 $lang['notification_title_success'] = 'Success';
 $lang['notification_title_warning'] = 'Warning';
 $lang['notification_title_error']   = 'Error';
+$lang['notification_title_sendmail_error']   = 'Could not send mail!';
+
 $lang['notification_title_info']    = 'Information';
 
 /*Notification Message (Login/Register) Lang*/
+$lang['notification_ingamemail_sending']		= 'Sending your in-mail game to ';
+$lang['notification_ingame_mail_sent']		       = '<strong>In-game mail successfully sent!</strong>';
+$lang['notification_ingame_mail_error']                 = '';
+$lang['notification_ingame_mail_error']		      = 'In-game mail could not be sent!</strong>';
 $lang['notification_username_empty']                   = 'Username is empty';
 $lang['notification_account_not_created']              = 'The account could not be created. Check the data and try again.';
 $lang['notification_email_empty']                      = 'Email is empty';

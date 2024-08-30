@@ -251,6 +251,45 @@ class Database_model extends CI_Model
      *
      * @return string
      */
+
+
+	// A. Blohme 
+	// 13:09 30.08.2024
+	// Added some character info retrieval functions
+
+	/*public function getCharacterData($guid, $realmid)
+	{
+		
+	
+	}*/
+
+	public function searchForCharacter($search_string, $realmid)
+	{
+       $realmConnection = $this->wowrealm->getRealmConnectionData($realmid);
+       $search_string = "" . $search_string . "";
+        
+        // Utføre søket
+        $search = $realmConnection->select("name,guid,level,class,race,money")->like("name", $search_string)->get("characters");
+        
+        if ($search->num_rows() < 1) {
+            return false;
+        }
+        return $search->result();
+	}
+
+   public function getCharacterData($guid,$realmid)
+   {
+       $realmConnection = $this->wowrealm->getRealmConnectionData($realmid);
+        // Utføre søket
+        $search = $realmConnection->select("*")->where("guid", $guid)->get("characters");
+        
+        if ($search->num_rows() < 1) {
+            return false;
+        }
+        return $search->result();
+   }
+
+
     public function getReqSpellName(int $id,int $realmid, int $patch = 10): string
     {
         $isExp = $this->wowrealm->isTbc($realmid);                
@@ -269,7 +308,7 @@ class Database_model extends CI_Model
         if ($spellNameCache) {
             $spell = $spellNameCache;
         } else {
-            $subQ  = $world_db->select("", false)->where("t1.entry=t2.entry")->get_compiled_select("spell_template t2");
+            $subQ  = $world_db->select("*", false)->where("t1.entry=t2.entry")->get_compiled_select("spell_template t2");
             $spell = $world_db->select()->where('entry', $id)->where('build=(' . $subQ . ')')->limit(1)->get('spell_template t1')->row('name');
 
             if ($spell) {

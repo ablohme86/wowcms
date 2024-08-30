@@ -2,6 +2,9 @@
 
 defined('BASEPATH') or exit('No direct script access allowed');
 
+
+
+
 /*Navbar Lang*/
 $lang['admin_nav_dashboard']       = 'Dashboard';
 $lang['admin_nav_system']          = 'System';
@@ -256,3 +259,17 @@ $lang['cms_allow_include']      = 'allow_url_include';
 $lang['cms_loaded_modules']     = 'Loaded Modules';
 $lang['cms_possible_webserver'] = 'Web Server <small>(possibly)<small>';
 $lang['cms_loaded_extensions']  = 'Loaded Extensions';
+
+
+/* In-Game Tools */
+/* Game Mailer */
+$lang['ingame_msg_placeholder_prefix'] = 'Dear';
+$lang['ingame_msg_placeholder_msg'] = '&#10;I hope this letter finds you in good health! Take these heavenly treasures as a proven hero and of good will from the Gods!&#10;';
+$lang['ingame_msg_placeholder_suffix'] = '&#10;Best regards, The Gods of Azeroth!&#10;----------------------------------------&#10;Heaven Street 777&#10;77777 Azeroth Heaven&#10;HEAVEN';
+$lang['ingame_msg_placeholder_itemsearch'] = 'Search for items to send here';
+$lang['ingame_msg_placeholder_itemlist_prefix'] = 'You can\'t mail more than';
+$lang['ingame_msg_placeholder_itemlist_suffix'] = 'items in';
+$lang['ingame_msg_send_mail'] = 'Mail it now!';
+$lang['game_mailer_recipient'] = "To whom would you like to send this mail to?";
+$lang['ingame_msg_your_character'] = "Your character";
+$lang['ingame_msg_was_not_found'] = "was not found";

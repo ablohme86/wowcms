@@ -1,0 +1,104 @@
+.added_item p{
+	margin: 0px;
+	padding-left: 10px;
+	font-size: 28px;
+}
+.input-wrapper {
+	position: relative;
+	display: flex;
+	align-items: center;
+	margin-left: 10px;
+}
+.input-wrapper .input-icon {
+	position: absolute;
+	left: 10px;
+	/* Juster avstanden fra venstre kant */
+	width: 15px;
+	/* Juster størrelsen på ikonet */
+	height: 15px;
+	/* Juster størrelsen på ikonet */
+}
+.input-wrapper input {
+	padding-left: 30px;
+	/* Legg til padding slik at teksten ikke overlapper ikonet */
+	height: 30px;
+	font-size: 16px;
+}
+.added-item {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	/* Plasserer elementene til venstre og høyre */
+	padding: 1px;
+	margin-bottom: 3px;
+	font-weight: bold;
+	border: 1px solid rgb(0, 0, 0);
+	border-radius: 5px;
+	cursor: pointer;
+}
+.added-item img {
+	margin: 4px;
+	width: 40px;
+	height: 40px;
+	vertical-align: middle;
+}
+.button_remove{
+	background: url('/del.PNG');
+	border: none;
+	outline: none;
+	vertical-align: revert-layer;
+	height: 32px;
+	width: 32px;
+	margin: 0px;
+}
+.button_remove:hover {
+	font-family: 'FRIZQT';
+	text-align: center;
+	color: #ffffff;
+	text-shadow: 0 0 8px #000, 0 0 8px #000, 0 0 8px #000, 0 0 8px #000, 0 0 8px #000;
+	background: url('/del_sel.PNG') no-repeat top;
+}
+#autocomplete-results {
+	border: 1px solid #ccc;
+	/*background-image: url('/universalbg.png');
+	*/
+	background-size: cover;
+	position: absolute;
+	max-height: 200px;
+	overflow-y: auto;
+	display: none;
+	overflow-x: auto;
+	background: white;
+	z-index: 1000;
+	/* Ensure it is on top */
+	img {
+		width: 40px;
+		height: 40px;
+		vertical-align: middle;
+	}
+}
+.autocomplete-item {
+	padding: 5px;
+	cursor: pointer;
+	align-items: left;
+	align-content: left;
+	align-self: left;
+	font-size: large;
+	font-weight: bold;
+}
+.autocomplete-item:hover {
+	background-color: #282928;
+}
+.added-items-container {
+	border: 1px solid #ccc;
+	height: 85%;
+	width: 100%;
+	scroll-behavior: auto;
+	position: relative;
+	font-size: large;
+}
+/*.added-item.selected {
+	background-color: #b5b5b5;
+	/* Highlight selected items */
+}
+*/
